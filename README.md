@@ -14,9 +14,9 @@ Include slf4j and logback as usual (depending on this library will *not* automat
 In your `pom.xml` (or equivalent), add:
 
      <dependency>
-        <groupId>com.internetitem</groupId>
+        <groupId>com.agido</groupId>
         <artifactId>logback-elasticsearch-appender</artifactId>
-        <version>1.6</version>
+        <version>3.0</version>
      </dependency>
 
 In your `logback.xml`:
