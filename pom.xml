@@ -9,7 +9,7 @@
 
     <name>Logback Elasticsearch Appender</name>
     <description>Send log events directly from Logback to Elasticsearch</description>
-    <url>https://github.com/internetitem/logback-elasticsearch-appender</url>
+    <url>https://github.com/agido-malter/logback-elasticsearch-appender</url>
 
     <licenses>
         <license>
@@ -20,14 +20,14 @@
     </licenses>
 
     <organization>
-        <name>Internet Item</name>
-        <url>https://internetitem.com/</url>
+        <name>agido GmbH</name>
+        <url>https://agido.com/</url>
     </organization>
 
     <scm>
-        <connection>scm:git:https://github.com/internetitem/logback-elasticsearch-appender.git</connection>
-        <developerConnection>scm:git:https://github.com/internetitem/logback-elasticsearch-appender.git</developerConnection>
-        <url>https://github.com/internetitem/logback-elasticsearch-appender</url>
+        <connection>scm:git:https://github.com/agido-malter/logback-elasticsearch-appender.git</connection>
+        <developerConnection>scm:git:https://github.com/agido-malter/logback-elasticsearch-appender.git</developerConnection>
+        <url>https://github.com/agido-malter/logback-elasticsearch-appender</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -175,11 +175,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
