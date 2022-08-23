@@ -87,7 +87,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
 		return new JsonFactory();
 	}
 
-	private static ElasticsearchOutputAggregator configureOutputAggregator(Settings settings, ErrorReporter errorReporter, HttpRequestHeaders httpRequestHeaders)  {
+	protected ElasticsearchOutputAggregator configureOutputAggregator(Settings settings, ErrorReporter errorReporter, HttpRequestHeaders httpRequestHeaders)  {
 		ElasticsearchOutputAggregator spigot = new ElasticsearchOutputAggregator(settings, errorReporter);
 
 		if (settings.isLogsToStderr()) {
