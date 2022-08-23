@@ -1,0 +1,30 @@
+name: "Automerge: Master -> Staging"
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  automerge-master-into-staging:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: "Checkout repository - branch - staging"
+      uses: actions/checkout@v3
+      with:
+        ref: staging
+        fetch-depth: "0"
+        ssh-key: ${{ secrets.GIT_USER_SSH_KEY }}
+
+    - name: Merge branches
+      run: |
+
+        # Setup git config 
+        git config --local user.email "joerg.malter@agido.com"
+        git config --local user.name "agido-malter"
+
+        git merge origin/master
+        git push
