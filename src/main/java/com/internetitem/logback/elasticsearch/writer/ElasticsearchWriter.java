@@ -82,10 +82,7 @@ public class ElasticsearchWriter implements SafeWriter {
 				settings.getAuthentication().addAuth(urlConnection, body);
 			}
 
-			try( Writer writer = new OutputStreamWriter(urlConnection.getOutputStream(), "UTF-8") ) {
-				writer.write(body);
-				writer.flush();
-			}
+			writeData(urlConnection, body);
 
 			int rc = urlConnection.getResponseCode();
 			if (rc != 200) {
@@ -107,7 +104,7 @@ public class ElasticsearchWriter implements SafeWriter {
 		return sendBuffer.length() != 0;
 	}
 
-	private static String slurpErrors(HttpURLConnection urlConnection) {
+	protected String slurpErrors(HttpURLConnection urlConnection) {
 		try (InputStream stream = urlConnection.getErrorStream()) {
 			if (stream == null) {
 				return "<no data>";
@@ -140,5 +137,29 @@ public class ElasticsearchWriter implements SafeWriter {
 			}
 		}
 	}
+
+    public StringBuilder getSendBuffer() {
+        return sendBuffer;
+    }
+
+    public Settings getSettings() {
+        return settings;
+    }
+
+    public Collection<HttpRequestHeader> getHeaderList() {
+        return headerList;
+    }
+
+    public ErrorReporter getErrorReporter() {
+        return errorReporter;
+    }
+
+    public boolean isBufferExceeded() {
+        return bufferExceeded;
+    }
+
+    public void setBufferExceeded(boolean bufferExceeded) {
+        this.bufferExceeded = bufferExceeded;
+    }
 
 }
