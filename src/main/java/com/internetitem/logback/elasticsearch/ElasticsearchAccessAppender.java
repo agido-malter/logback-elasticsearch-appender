@@ -1,28 +1,19 @@
 package com.internetitem.logback.elasticsearch;
 
-import java.io.IOException;
+import com.agido.logback.elasticsearch.config.Settings;
 
-import ch.qos.logback.access.spi.IAccessEvent;
-import com.internetitem.logback.elasticsearch.config.Settings;
-
-public class ElasticsearchAccessAppender extends AbstractElasticsearchAppender<IAccessEvent> {
-
+/**
+ * compatibility class
+ *
+ * @deprecated since 3.0.1, to be removed
+ */
+@Deprecated
+public class ElasticsearchAccessAppender extends com.agido.logback.elasticsearch.ElasticsearchAccessAppender {
     public ElasticsearchAccessAppender() {
+        super();
     }
 
     public ElasticsearchAccessAppender(Settings settings) {
         super(settings);
     }
-
-    @Override
-    protected void appendInternal(IAccessEvent eventObject) {
-        eventObject.prepareForDeferredProcessing();
-        publishEvent(eventObject);
-    }
-
-    protected AccessElasticsearchPublisher buildElasticsearchPublisher() throws IOException {
-        return new AccessElasticsearchPublisher(getContext(), errorReporter, settings, elasticsearchProperties, headers);
-    }
-
-
 }

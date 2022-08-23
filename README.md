@@ -1,11 +1,14 @@
 Logback Elasticsearch Appender
 ===============================
 
-[![Build Status](https://travis-ci.org/internetitem/logback-elasticsearch-appender.svg?branch=master)](https://travis-ci.org/internetitem/logback-elasticsearch-appender)
-
 Send log events directly from Logback to Elasticsearch. Logs are delivered asynchronously (i.e. not on the main thread) so will not block execution of the program. Note that the queue backlog can be bounded and messages *can* be lost if Elasticsearch is down and either the backlog queue is full or the producer program is trying to exit (it will retry up to a configured number of attempts, but will not block shutdown of the program beyond that). For long-lived programs, this should not be a problem, as messages should be delivered eventually.
 
 This software is dual-licensed under the EPL 1.0 and LGPL 2.1, which is identical to the [Logback License](http://logback.qos.ch/license.html) itself.
+
+Info
+====
+This project is a fork of internetitem/logback-elasticsearch-appender, which was last committed in 2017. I decided to fork the project and remove it to continue development. Bugfixes and urgent PR were brought together in this project.
+
 
 Usage
 =====
@@ -16,12 +19,12 @@ In your `pom.xml` (or equivalent), add:
      <dependency>
         <groupId>com.agido</groupId>
         <artifactId>logback-elasticsearch-appender</artifactId>
-        <version>3.0.1</version>
+        <version>3.0.2</version>
      </dependency>
 
 In your `logback.xml`:
 
-        <appender name="ELASTIC" class="com.internetitem.logback.elasticsearch.ElasticsearchAppender">
+        <appender name="ELASTIC" class="com.agido.logback.elasticsearch.ElasticsearchAppender">
             <url>http://yourserver/_bulk</url>
             <index>logs-%date{yyyy-MM-dd}</index>
             <type>tester</type>
@@ -38,7 +41,7 @@ In your `logback.xml`:
             <rawJsonMessage>false</rawJsonMessage> <!-- optional (default false) -->
             <includeMdc>false</includeMdc> <!-- optional (default false) -->
             <maxMessageSize>100</maxMessageSize> <!-- optional (default -1 -->
-            <authentication class="com.internetitem.logback.elasticsearch.config.BasicAuthentication" /> <!-- optional -->
+            <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication" /> <!-- optional -->
             <objectSerialization>true</objectSerialization> <!-- optional (default false) -->
             <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
             
@@ -128,7 +131,7 @@ Groovy Configuration
 
 If you configure logback using `logback.groovy`, this can be configured as follows:
 
-      import com.internetitem.logback.elasticsearch.ElasticsearchAppender
+      import com.agido.logback.elasticsearch.ElasticsearchAppender
 
       appender("ELASTIC", ElasticsearchAppender){
       	url = 'http://yourserver/_bulk'
@@ -149,13 +152,18 @@ Authentication
 
 Authentication is a pluggable mechanism. You must specify the authentication class on the XML element itself. The currently supported classes are:
 
-* `com.internetitem.logback.elasticsearch.config.BasicAuthentication` - Username and password are taken from the URL (i.e. `http://username:password@yourserver/_bulk`)
-* `com.internetitem.logback.elasticsearch.config.AWSAuthentication` - Authenticate using the AWS SDK, for use with the [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) (note that you will also need to include `com.amazonaws:aws-java-sdk-core` as a dependency)
+* `com.agido.logback.elasticsearch.config.BasicAuthentication` - Username and password are taken from the URL (i.e. `http://username:password@yourserver/_bulk`)
+* `com.agido.logback.elasticsearch.config.AWSAuthentication` - Authenticate using the AWS SDK, for use with the [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) (note that you will also need to include `com.amazonaws:aws-java-sdk-core` as a dependency)
 
 Logback Access
 ==============
 
 Included is also an Elasticsearch appender for Logback Access. The configuration is almost identical, with the following two differences:
 
- * The Appender class name is `com.internetitem.logback.elasticsearch.ElasticsearchAccessAppender`
+ * The Appender class name is `com.agido.logback.elasticsearch.ElasticsearchAccessAppender`
  * The `value` for each `property` uses the [Logback Access conversion words](http://logback.qos.ch/manual/layouts.html#logback-access).
+
+Prevent Major API change
+========================
+
+To prevent a major and/or breaking API change, the old packagename com.internetitem could also used

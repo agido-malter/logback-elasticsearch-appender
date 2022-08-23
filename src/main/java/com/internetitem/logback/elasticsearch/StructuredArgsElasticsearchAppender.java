@@ -1,21 +1,19 @@
 package com.internetitem.logback.elasticsearch;
 
-import com.internetitem.logback.elasticsearch.config.Settings;
+import com.agido.logback.elasticsearch.config.Settings;
 
-import java.io.IOException;
-
-public class StructuredArgsElasticsearchAppender extends ElasticsearchAppender {
-
+/**
+ * compatibility class
+ *
+ * @deprecated since 3.0.1, to be removed
+ */
+@Deprecated
+public class StructuredArgsElasticsearchAppender extends com.agido.logback.elasticsearch.StructuredArgsElasticsearchAppender {
     public StructuredArgsElasticsearchAppender() {
+        super();
     }
 
     public StructuredArgsElasticsearchAppender(Settings settings) {
         super(settings);
     }
-
-    protected StructuredArgsElasticsearchPublisher buildElasticsearchPublisher() throws IOException {
-        return new StructuredArgsElasticsearchPublisher(this.getContext(), this.errorReporter, this.settings,
-                this.elasticsearchProperties, this.headers);
-    }
-
 }
