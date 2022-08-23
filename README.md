@@ -7,7 +7,7 @@ This software is dual-licensed under the EPL 1.0 and LGPL 2.1, which is identica
 
 Info
 ====
-This project is a fork of internetitem/logback-elasticsearch-appender, which was last committed in 2017. I decided to fork the project and remove it to continue development. Bugfixes and urgent PR were brought together in this project.
+This project is a fork of internetitem/logback-elasticsearch-appender, which was last committed in 2017. I decided to fork the project and detach it to continue development. Bugfixes and urgent PR were brought together in this project.
 
 
 Usage
