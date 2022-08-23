@@ -156,7 +156,7 @@ public class ElasticsearchAppenderTest {
 
     @Test
     public void should_create_error_reporter_with_same_context() {
-        ElasticsearchAppender appender = new ElasticsearchAppender(){
+        ElasticsearchAppender appender = new ElasticsearchAppender() {
             @Override
             public Context getContext() {
                 return mockedContext;

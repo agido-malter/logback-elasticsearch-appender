@@ -2,11 +2,11 @@ package com.agido.logback.elasticsearch;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
 import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
+import com.fasterxml.jackson.core.JsonGenerator;
 import net.logstash.logback.marker.ObjectAppendingMarker;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ public class StructuredArgsElasticsearchPublisher extends ClassicElasticsearchPu
         this.errorReporter = errorReporter;
 
         keyPrefix = "";
-        if(settings != null && settings.getKeyPrefix() != null) {
+        if (settings != null && settings.getKeyPrefix() != null) {
             keyPrefix = settings.getKeyPrefix();
         }
 
@@ -40,24 +40,23 @@ public class StructuredArgsElasticsearchPublisher extends ClassicElasticsearchPu
     protected void serializeCommonFields(JsonGenerator gen, ILoggingEvent event) throws IOException {
         super.serializeCommonFields(gen, event);
 
-        if(event.getArgumentArray() != null) {
+        if (event.getArgumentArray() != null) {
             Object[] eventArgs = event.getArgumentArray();
-            for(Object eventArg:eventArgs) {
-                if(eventArg instanceof ObjectAppendingMarker) {
+            for (Object eventArg : eventArgs) {
+                if (eventArg instanceof ObjectAppendingMarker) {
                     ObjectAppendingMarker marker = (ObjectAppendingMarker) eventArg;
-                    if(field != null && settings != null && settings.isObjectSerialization() &&
+                    if (field != null && settings != null && settings.isObjectSerialization() &&
                             marker.getFieldValue().toString().contains("@")) {
                         try {
                             Object obj = field.get(marker);
-                            if(obj != null) {
+                            if (obj != null) {
                                 gen.writeObjectField(keyPrefix + marker.getFieldName(), obj);
                             }
                         } catch (IllegalAccessException e) {
                             // message will be logged without object
                             errorReporter.logError("error in logging with object serialization", e);
                         }
-                    }
-                    else
+                    } else
                         gen.writeObjectField(keyPrefix + marker.getFieldName(), marker.getFieldValue());
                 }
             }

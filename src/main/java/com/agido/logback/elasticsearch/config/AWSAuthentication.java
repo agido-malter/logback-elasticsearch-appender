@@ -1,5 +1,15 @@
 package com.agido.logback.elasticsearch.config;
 
+import com.amazonaws.ReadLimitInfo;
+import com.amazonaws.SignableRequest;
+import com.amazonaws.auth.AWS4Signer;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.http.HttpMethodName;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.util.StringInputStream;
+
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -10,16 +20,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.amazonaws.ReadLimitInfo;
-import com.amazonaws.SignableRequest;
-import com.amazonaws.auth.AWS4Signer;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.http.HttpMethodName;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.util.StringInputStream;
 
 /**
  * This class implements Amazon AWS v4 Signature signing for ElasticSearch.
@@ -44,13 +44,13 @@ public class AWSAuthentication implements Authentication {
 
         signer.sign(new URLConnectionSignableRequest(urlConnection, body), credentials);
     }
-    
+
     private String getCurrentRegion() {
-		if(Regions.getCurrentRegion() != null) {
-			return Regions.getCurrentRegion().getName();
-		}
-		return null;
-	}
+        if (Regions.getCurrentRegion() != null) {
+            return Regions.getCurrentRegion().getName();
+        }
+        return null;
+    }
 
     /**
      * Wrapper for signing a HttpURLConnection
@@ -59,21 +59,21 @@ public class AWSAuthentication implements Authentication {
 
         private final HttpURLConnection urlConnection;
         private final String body;
-        private final Map<String,String> headers = new HashMap<>();
+        private final Map<String, String> headers = new HashMap<>();
 
         public URLConnectionSignableRequest(HttpURLConnection urlConnection, String body) {
             this.urlConnection = urlConnection;
             this.body = body;
-            addHeader("User-Agent","ElasticSearchWriter/1.0");
-            addHeader("Accept","*/*");
-            addHeader("Content-Type","application/json");
-            addHeader("Content-Length",String.valueOf(body.length()));
+            addHeader("User-Agent", "ElasticSearchWriter/1.0");
+            addHeader("Accept", "*/*");
+            addHeader("Content-Type", "application/json");
+            addHeader("Content-Length", String.valueOf(body.length()));
         }
 
         @Override
         public void addHeader(String name, String value) {
             this.urlConnection.addRequestProperty(name, value);
-            headers.put(name,value);
+            headers.put(name, value);
         }
 
         @Override
@@ -100,7 +100,7 @@ public class AWSAuthentication implements Authentication {
         public URI getEndpoint() {
             try {
                 URL u = urlConnection.getURL();
-                return new URI(u.getProtocol(),null, u.getHost(), u.getPort(), null, null, null);
+                return new URI(u.getProtocol(), null, u.getHost(), u.getPort(), null, null, null);
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -146,4 +146,3 @@ public class AWSAuthentication implements Authentication {
         }
     }
 }
-

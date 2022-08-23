@@ -1,9 +1,9 @@
 package com.agido.logback.elasticsearch;
 
-import java.io.IOException;
-
 import ch.qos.logback.access.spi.IAccessEvent;
 import com.agido.logback.elasticsearch.config.Settings;
+
+import java.io.IOException;
 
 public class ElasticsearchAccessAppender extends AbstractElasticsearchAppender<IAccessEvent> {
 

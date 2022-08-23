@@ -1,11 +1,7 @@
 package com.agido.logback.elasticsearch;
 
-import java.io.IOException;
-import java.util.Map;
-
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
 import com.agido.logback.elasticsearch.config.Property;
@@ -13,6 +9,10 @@ import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.AbstractPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ClassicPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
+import com.fasterxml.jackson.core.JsonGenerator;
+
+import java.io.IOException;
+import java.util.Map;
 
 public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublisher<ILoggingEvent> {
 
@@ -40,7 +40,7 @@ public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublishe
             gen.writeObjectField("message", formattedMessage);
         }
 
-        if(settings.isIncludeMdc()) {
+        if (settings.isIncludeMdc()) {
             for (Map.Entry<String, String> entry : event.getMDCPropertyMap().entrySet()) {
                 gen.writeObjectField(entry.getKey(), entry.getValue());
             }

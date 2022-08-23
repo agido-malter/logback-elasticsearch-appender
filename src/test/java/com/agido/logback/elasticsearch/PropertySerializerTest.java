@@ -2,9 +2,9 @@ package com.agido.logback.elasticsearch;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.agido.logback.elasticsearch.config.Property;
 import com.agido.logback.elasticsearch.util.ClassicPropertyAndEncoder;
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;

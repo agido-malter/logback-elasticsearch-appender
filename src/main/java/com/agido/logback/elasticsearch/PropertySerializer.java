@@ -1,7 +1,7 @@
 package com.agido.logback.elasticsearch;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.agido.logback.elasticsearch.util.AbstractPropertyAndEncoder;
+import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 

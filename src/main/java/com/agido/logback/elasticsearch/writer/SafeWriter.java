@@ -4,9 +4,9 @@ import java.io.IOException;
 
 public interface SafeWriter {
 
-	void write(char[] cbuf, int off, int len);
+    void write(char[] cbuf, int off, int len);
 
-	void sendData() throws IOException;
+    void sendData() throws IOException;
 
-	boolean hasPendingData();
+    boolean hasPendingData();
 }
