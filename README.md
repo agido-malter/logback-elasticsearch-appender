@@ -5,6 +5,11 @@ Send log events directly from Logback to Elasticsearch. Logs are delivered async
 
 This software is dual-licensed under the EPL 1.0 and LGPL 2.1, which is identical to the [Logback License](http://logback.qos.ch/license.html) itself.
 
+Info
+====
+This project is a fork of internetitem/logback-elasticsearch-appender, which was last committed in 2017. I decided to fork the project and remove it to continue development. Bugfixes and urgent PR were brought together in this project.
+
+
 Usage
 =====
 Include slf4j and logback as usual (depending on this library will *not* automatically pull them in).
@@ -157,3 +162,8 @@ Included is also an Elasticsearch appender for Logback Access. The configuration
 
  * The Appender class name is `com.agido.logback.elasticsearch.ElasticsearchAccessAppender`
  * The `value` for each `property` uses the [Logback Access conversion words](http://logback.qos.ch/manual/layouts.html#logback-access).
+
+Prevent Major API change
+========================
+
+To prevent a major and/or breaking API change, the old packagename com.internetitem could also used
