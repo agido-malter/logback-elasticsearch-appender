@@ -149,13 +149,13 @@ Authentication
 
 Authentication is a pluggable mechanism. You must specify the authentication class on the XML element itself. The currently supported classes are:
 
-* `com.internetitem.logback.elasticsearch.config.BasicAuthentication` - Username and password are taken from the URL (i.e. `http://username:password@yourserver/_bulk`)
-* `com.internetitem.logback.elasticsearch.config.AWSAuthentication` - Authenticate using the AWS SDK, for use with the [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) (note that you will also need to include `com.amazonaws:aws-java-sdk-core` as a dependency)
+* `com.agido.logback.elasticsearch.config.BasicAuthentication` - Username and password are taken from the URL (i.e. `http://username:password@yourserver/_bulk`)
+* `com.agido.logback.elasticsearch.config.AWSAuthentication` - Authenticate using the AWS SDK, for use with the [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) (note that you will also need to include `com.amazonaws:aws-java-sdk-core` as a dependency)
 
 Logback Access
 ==============
 
 Included is also an Elasticsearch appender for Logback Access. The configuration is almost identical, with the following two differences:
 
- * The Appender class name is `com.internetitem.logback.elasticsearch.ElasticsearchAccessAppender`
+ * The Appender class name is `com.agido.logback.elasticsearch.ElasticsearchAccessAppender`
  * The `value` for each `property` uses the [Logback Access conversion words](http://logback.qos.ch/manual/layouts.html#logback-access).
