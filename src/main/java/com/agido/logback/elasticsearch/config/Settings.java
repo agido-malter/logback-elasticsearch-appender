@@ -1,5 +1,7 @@
 package com.agido.logback.elasticsearch.config;
 
+import ch.qos.logback.classic.Level;
+
 import java.net.URL;
 
 public class Settings {
@@ -25,6 +27,7 @@ public class Settings {
     private int maxMessageSize = -1;
     private String keyPrefix;
     private boolean objectSerialization;
+    private Level autoStackTraceLevel = Level.OFF;
 
     public String getIndex() {
         return index;
@@ -181,4 +184,11 @@ public class Settings {
         this.objectSerialization = objectSerialization;
     }
 
+    public void setAutoStackTraceLevel(String level) {
+        autoStackTraceLevel = Level.toLevel(level);
+    }
+
+    public Level getAutoStackTraceLevel() {
+        return autoStackTraceLevel;
+    }
 }
