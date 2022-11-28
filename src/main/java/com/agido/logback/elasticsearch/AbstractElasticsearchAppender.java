@@ -1,5 +1,6 @@
 package com.agido.logback.elasticsearch;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.agido.logback.elasticsearch.config.Authentication;
 import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
@@ -163,4 +164,7 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
         settings.setObjectSerialization(objectSerialization);
     }
 
+    public void setAutoStackTraceLevel(String level) {
+        settings.setAutoStackTraceLevel(level);
+    }
 }
