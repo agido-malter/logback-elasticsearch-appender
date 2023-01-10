@@ -206,15 +206,17 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     }
 
     private void serializeEvent(JsonGenerator gen, T event, List<AbstractPropertyAndEncoder<T>> propertyList) throws IOException {
-        gen.writeStartObject();
+        try {
+            gen.writeStartObject();
 
-        serializeCommonFields(gen, event);
+            serializeCommonFields(gen, event);
 
-        for (AbstractPropertyAndEncoder<T> pae : propertyList) {
-            propertySerializer.serializeProperty(gen, event, pae);
+            for (AbstractPropertyAndEncoder<T> pae : propertyList) {
+                propertySerializer.serializeProperty(gen, event, pae);
+            }
+        } finally {
+            gen.writeEndObject();
         }
-
-        gen.writeEndObject();
     }
 
     protected abstract void serializeCommonFields(JsonGenerator gen, T event) throws IOException;
