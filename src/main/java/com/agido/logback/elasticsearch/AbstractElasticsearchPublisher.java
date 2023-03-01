@@ -2,8 +2,8 @@ package com.agido.logback.elasticsearch;
 
 import ch.qos.logback.core.Context;
 import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
+import com.agido.logback.elasticsearch.config.EsProperty;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
-import com.agido.logback.elasticsearch.config.Property;
 import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.AbstractPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
@@ -67,7 +67,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
         this.jf.setRootValueSeparator(null);
         this.jsonGenerator = jf.createGenerator(outputAggregator);
 
-        this.indexPattern = buildPropertyAndEncoder(context, new Property("<index>", settings.getIndex(), false));
+        this.indexPattern = buildPropertyAndEncoder(context, new EsProperty("<index>", settings.getIndex(), false));
         this.propertyList = generatePropertyList(context, properties);
 
         this.propertySerializer = new PropertySerializer();
@@ -108,14 +108,14 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     private List<AbstractPropertyAndEncoder<T>> generatePropertyList(Context context, ElasticsearchProperties properties) {
         List<AbstractPropertyAndEncoder<T>> list = new ArrayList<AbstractPropertyAndEncoder<T>>();
         if (properties != null) {
-            for (Property property : properties.getProperties()) {
+            for (EsProperty property : properties.getProperties()) {
                 list.add(buildPropertyAndEncoder(context, property));
             }
         }
         return list;
     }
 
-    protected abstract AbstractPropertyAndEncoder<T> buildPropertyAndEncoder(Context context, Property property);
+    protected abstract AbstractPropertyAndEncoder<T> buildPropertyAndEncoder(Context context, EsProperty property);
 
     public void addEvent(T event) {
         if (!outputAggregator.hasOutputs()) {
