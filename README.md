@@ -46,6 +46,7 @@ In your `logback.xml`:
             <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
             
             <properties>
+                <!-- please note that <property> tags are also supported, esProperty was added for logback-1.3 compatibility -->
                 <esProperty>
                     <name>host</name>
                     <value>${HOSTNAME}</value>
