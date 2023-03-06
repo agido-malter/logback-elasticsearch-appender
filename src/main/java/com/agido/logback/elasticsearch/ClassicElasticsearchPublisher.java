@@ -3,8 +3,8 @@ package com.agido.logback.elasticsearch;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
 import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
-import com.agido.logback.elasticsearch.config.EsProperty;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
+import com.agido.logback.elasticsearch.config.Property;
 import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.AbstractPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ClassicPropertyAndEncoder;
@@ -21,7 +21,7 @@ public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublishe
     }
 
     @Override
-    protected AbstractPropertyAndEncoder<ILoggingEvent> buildPropertyAndEncoder(Context context, EsProperty property) {
+    protected AbstractPropertyAndEncoder<ILoggingEvent> buildPropertyAndEncoder(Context context, Property property) {
         return new ClassicPropertyAndEncoder(property, context);
     }
 
