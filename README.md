@@ -46,27 +46,27 @@ In your `logback.xml`:
             <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
             
             <properties>
-                <property>
+                <esProperty>
                     <name>host</name>
                     <value>${HOSTNAME}</value>
                     <allowEmpty>false</allowEmpty>
-                </property>
-                <property>
+                </esProperty>
+                <esProperty>
                     <name>severity</name>
                     <value>%level</value>
-                </property>
-                <property>
+                </esProperty>
+                <esProperty>
                     <name>thread</name>
                     <value>%thread</value>
-                </property>
-                <property>
+                </esProperty>
+                <esProperty>
                     <name>stacktrace</name>
                     <value>%ex</value>
-                </property>
-                <property>
+                </esProperty>
+                <esProperty>
                     <name>logger</name>
                     <value>%logger</value>
-                </property>
+                </esProperty>
             </properties>
             <headers>
                 <header>
@@ -119,7 +119,7 @@ Configuration Reference
  * `objectSerialization` (optional): specifies whether to use POJO to JSON serialization 
  * `keyPrefix` (optional): objects logged within a message will also be logged separately with this prefix added  
 
-The fields `@timestamp` and `message` are always sent and can not currently be configured. Additional fields can be sent by adding `<property>` elements to the `<properties>` set.
+The fields `@timestamp` and `message` are always sent and can not currently be configured. Additional fields can be sent by adding `<esProperty>` elements to the `<properties>` set.
 
  * `name` (required): Key to be used in the log event
  * `value` (required): Text string to be sent. Internally, the value is populated using a Logback PatternLayout, so all [Conversion Words](http://logback.qos.ch/manual/layouts.html#conversionWord) can be used (in addition to the standard static variable interpolations like `${HOSTNAME}`).
@@ -161,7 +161,7 @@ Logback Access
 Included is also an Elasticsearch appender for Logback Access. The configuration is almost identical, with the following two differences:
 
  * The Appender class name is `com.agido.logback.elasticsearch.ElasticsearchAccessAppender`
- * The `value` for each `property` uses the [Logback Access conversion words](http://logback.qos.ch/manual/layouts.html#logback-access).
+ * The `value` for each `esProperty` uses the [Logback Access conversion words](http://logback.qos.ch/manual/layouts.html#logback-access).
 
 Prevent Major API change
 ========================
