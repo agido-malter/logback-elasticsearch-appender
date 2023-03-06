@@ -4,11 +4,11 @@ import ch.qos.logback.access.PatternLayout;
 import ch.qos.logback.access.spi.IAccessEvent;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.pattern.PatternLayoutBase;
-import com.agido.logback.elasticsearch.config.EsProperty;
+import com.agido.logback.elasticsearch.config.Property;
 
 public class AccessPropertyAndEncoder extends AbstractPropertyAndEncoder<IAccessEvent> {
 
-    public AccessPropertyAndEncoder(EsProperty property, Context context) {
+    public AccessPropertyAndEncoder(Property property, Context context) {
         super(property, context);
     }
 

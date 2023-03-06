@@ -1,6 +1,6 @@
 package com.agido.logback.elasticsearch.config;
 
-public class EsProperty {
+public class Property {
     private String name;
     private String value;
     private boolean allowEmpty;
@@ -10,10 +10,10 @@ public class EsProperty {
         STRING, INT, FLOAT, BOOLEAN
     }
 
-    public EsProperty() {
+    public Property() {
     }
 
-    public EsProperty(String name, String value, boolean allowEmpty) {
+    public Property(String name, String value, boolean allowEmpty) {
         this.name = name;
         this.value = value;
         this.allowEmpty = allowEmpty;

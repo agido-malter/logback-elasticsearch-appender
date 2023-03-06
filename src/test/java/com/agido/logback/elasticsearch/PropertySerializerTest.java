@@ -2,7 +2,7 @@ package com.agido.logback.elasticsearch;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
-import com.agido.logback.elasticsearch.config.EsProperty;
+import com.agido.logback.elasticsearch.config.Property;
 import com.agido.logback.elasticsearch.util.ClassicPropertyAndEncoder;
 import com.fasterxml.jackson.core.JsonGenerator;
 import org.junit.Test;
@@ -15,7 +15,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
-public class EsPropertySerializerTest {
+public class PropertySerializerTest {
     @Mock
     private Context context;
 
@@ -30,21 +30,21 @@ public class EsPropertySerializerTest {
     @Test
     public void should_default_to_string_type() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("propertyValue");
 
         // when
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        assertThat(property.getType(), is(EsProperty.Type.STRING));
+        assertThat(property.getType(), is(Property.Type.STRING));
         verify(jsonGenerator).writeObject("propertyValue");
     }
 
     @Test
     public void should_serialize_int_as_number() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("123");
         property.setType("int");
 
@@ -58,7 +58,7 @@ public class EsPropertySerializerTest {
     @Test
     public void should_serialize_object_when_invalid_int() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("A123Z");
         property.setType("int");
 
@@ -72,7 +72,7 @@ public class EsPropertySerializerTest {
     @Test
     public void should_serialize_float_as_number() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("12.30");
         property.setType("float");
 
@@ -86,7 +86,7 @@ public class EsPropertySerializerTest {
     @Test
     public void should_serialize_object_when_invalid_float() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("A12.30Z");
         property.setType("float");
 
@@ -100,7 +100,7 @@ public class EsPropertySerializerTest {
     @Test
     public void should_serialize_true_as_boolean() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("true");
         property.setType("boolean");
 
@@ -114,7 +114,7 @@ public class EsPropertySerializerTest {
     @Test
     public void should_serialize_object_when_invalid_boolean() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("AtrueZ");
         property.setType("boolean");
 
@@ -128,7 +128,7 @@ public class EsPropertySerializerTest {
     @Test
     public void should_serialize_object_when_invalid_type() throws Exception {
         // given
-        EsProperty property = new EsProperty();
+        Property property = new Property();
         property.setValue("value");
         property.setType("invalidType");
 
