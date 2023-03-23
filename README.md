@@ -44,6 +44,7 @@ In your `logback.xml`:
             <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication" /> <!-- optional -->
             <objectSerialization>true</objectSerialization> <!-- optional (default false) -->
             <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
+            <operation>index</operation> <!-- optional (supported: index, create - default create) -->
             
             <properties>
                 <!-- please note that <property> tags are also supported, esProperty was added for logback-1.3 compatibility -->
