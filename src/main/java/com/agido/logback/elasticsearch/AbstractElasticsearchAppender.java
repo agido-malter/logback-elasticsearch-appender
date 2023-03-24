@@ -6,6 +6,7 @@ import com.agido.logback.elasticsearch.config.Authentication;
 import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
 import com.agido.logback.elasticsearch.config.Settings;
+import com.agido.logback.elasticsearch.config.Operation;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
 
 import java.io.IOException;
@@ -166,5 +167,9 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
 
     public void setAutoStackTraceLevel(String level) {
         settings.setAutoStackTraceLevel(level);
+    }
+
+    public void setOperation(String operation) {
+        settings.setOperation( Operation.of( operation ).orElse( Operation.CREATE ) );
     }
 }

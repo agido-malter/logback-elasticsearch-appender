@@ -19,7 +19,7 @@ In your `pom.xml` (or equivalent), add:
      <dependency>
         <groupId>com.agido</groupId>
         <artifactId>logback-elasticsearch-appender</artifactId>
-        <version>3.0.4</version>
+        <version>3.0.6</version>
      </dependency>
 
 In your `logback.xml`:
@@ -44,6 +44,7 @@ In your `logback.xml`:
             <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication" /> <!-- optional -->
             <objectSerialization>true</objectSerialization> <!-- optional (default false) -->
             <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
+            <operation>index</operation> <!-- optional (supported: index, create - default create) -->
             
             <properties>
                 <!-- please note that <property> tags are also supported, esProperty was added for logback-1.3 compatibility -->

@@ -28,9 +28,14 @@ public class Settings {
     private String keyPrefix;
     private boolean objectSerialization;
     private Level autoStackTraceLevel = Level.OFF;
+    private Operation operation = Operation.CREATE;
 
     public String getIndex() {
         return index;
+    }
+
+    public Operation getOperation() {
+        return operation;
     }
 
     public void setIndex(String index) {
@@ -39,6 +44,10 @@ public class Settings {
 
     public String getType() {
         return type;
+    }
+
+    public void setOperation( Operation operation ) {
+        this.operation = operation;
     }
 
     public void setType(String type) {
