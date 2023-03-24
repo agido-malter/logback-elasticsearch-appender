@@ -44,7 +44,7 @@ In your `logback.xml`:
             <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication" /> <!-- optional -->
             <objectSerialization>true</objectSerialization> <!-- optional (default false) -->
             <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
-            <operation>index</operation> <!-- optional (supported: index, create - default create) -->
+            <operation>index</operation> <!-- optional (supported: index, create, update, delete - default create) -->
             
             <properties>
                 <!-- please note that <property> tags are also supported, esProperty was added for logback-1.3 compatibility -->
@@ -119,7 +119,8 @@ Configuration Reference
  * `maxMessageSize` (optional, default -1): If set to a number greater than 0, truncate messages larger than this length, then append "`..`" to denote that the message was truncated
  * `authentication` (optional): Add the ability to send authentication headers (see below)
  * `objectSerialization` (optional): specifies whether to use POJO to JSON serialization 
- * `keyPrefix` (optional): objects logged within a message will also be logged separately with this prefix added  
+ * `keyPrefix` (optional): objects logged within a message will also be logged separately with this prefix added
+ * `operation` (optional, default create): Possible values are: `index`, `create`, `update` & `delete`, see the Elasticsearch [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html) documentation for more information
 
 The fields `@timestamp` and `message` are always sent and can not currently be configured. Additional fields can be sent by adding `<esProperty>` elements to the `<properties>` set.
 

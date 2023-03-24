@@ -169,7 +169,13 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
         settings.setAutoStackTraceLevel(level);
     }
 
-    public void setOperation(String operation) {
-        settings.setOperation( Operation.of( operation ).orElse( Operation.CREATE ) );
+    public void setOperation( String operation ) {
+        settings.setOperation( Operation.of( operation )
+                .orElseGet(
+                    () -> {
+                        addWarn( "Invalid value provided for [operation] setting, assuming CREATE" );
+                        return Operation.CREATE;
+                    } )
+            );
     }
 }
