@@ -28,7 +28,7 @@ public class Settings {
     private String keyPrefix;
     private boolean objectSerialization;
     private Level autoStackTraceLevel = Level.OFF;
-    private Operation operation = Operation.CREATE;
+    private Operation operation = Operation.create;
 
     public String getIndex() {
         return index;

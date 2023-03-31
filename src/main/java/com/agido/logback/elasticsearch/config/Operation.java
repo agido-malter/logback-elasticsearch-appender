@@ -1,26 +1,22 @@
 package com.agido.logback.elasticsearch.config;
 
-import java.util.EnumSet;
 import java.util.Optional;
 
+/**
+ * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html">Bulk API actions</a>
+ */
 public enum Operation {
-    INDEX( "index" ),
-    CREATE( "create" );
+    index,
+    create,
+    update,
+    delete;
 
-    private final String label;
+    public static Optional<Operation> of( String value ) {
+        try {
+            return Optional.of( valueOf( value ) );
+        } catch ( IllegalArgumentException ignored ) {
+        }
 
-    Operation( String label ) {
-        this.label = label;
-    }
-
-    public String getLabel() {
-        return this.label;
-    }
-
-    public static Optional<Operation> of( String label ) {
-        return EnumSet.allOf( Operation.class )
-                      .stream()
-                      .filter( op -> op.label.equalsIgnoreCase( label ) )
-                      .findFirst();
+        return Optional.empty( );
     }
 }
