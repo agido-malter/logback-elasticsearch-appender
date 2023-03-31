@@ -19,7 +19,7 @@ In your `pom.xml` (or equivalent), add:
      <dependency>
         <groupId>com.agido</groupId>
         <artifactId>logback-elasticsearch-appender</artifactId>
-        <version>3.0.6</version>
+        <version>3.0.8</version>
      </dependency>
 
 In your `logback.xml`:
