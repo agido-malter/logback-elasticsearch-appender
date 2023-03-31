@@ -1,3 +1,6 @@
+v.3.0.8
+ * added enum values for update & delete
+
 v.3.0.7
  * configurable operation setting for op_type
 
