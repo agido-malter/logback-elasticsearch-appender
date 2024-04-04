@@ -11,14 +11,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -100,7 +100,7 @@ public class ElasticsearchAppenderTest {
 
         appender.append(eventToLog);
 
-        verifyZeroInteractions(elasticsearchPublisher);
+        verifyNoInteractions(elasticsearchPublisher);
     }
 
 
@@ -117,7 +117,7 @@ public class ElasticsearchAppenderTest {
 
         appender.append(eventToLog);
 
-        verifyZeroInteractions(elasticsearchPublisher);
+        verifyNoInteractions(elasticsearchPublisher);
     }
 
 
