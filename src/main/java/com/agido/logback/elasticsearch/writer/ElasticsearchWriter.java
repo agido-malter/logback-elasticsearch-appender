@@ -59,40 +59,36 @@ public class ElasticsearchWriter implements SafeWriter {
         }
 
         HttpURLConnection urlConnection = (HttpURLConnection) (settings.getUrl().openConnection());
-        try {
-            urlConnection.setDoInput(true);
-            urlConnection.setDoOutput(true);
-            urlConnection.setReadTimeout(settings.getReadTimeout());
-            urlConnection.setConnectTimeout(settings.getConnectTimeout());
-            urlConnection.setRequestMethod("POST");
+        urlConnection.setDoInput(true);
+        urlConnection.setDoOutput(true);
+        urlConnection.setReadTimeout(settings.getReadTimeout());
+        urlConnection.setConnectTimeout(settings.getConnectTimeout());
+        urlConnection.setRequestMethod("POST");
 
-            String body = sendBuffer.toString();
+        String body = sendBuffer.toString();
 
-            if (!headerList.isEmpty()) {
-                for (HttpRequestHeader header : headerList) {
-                    urlConnection.setRequestProperty(header.getName(), header.getValue());
-                }
+        if (!headerList.isEmpty()) {
+            for (HttpRequestHeader header : headerList) {
+                urlConnection.setRequestProperty(header.getName(), header.getValue());
             }
+        }
 
-            if (settings.getAuthentication() != null) {
-                settings.getAuthentication().addAuth(urlConnection, body);
+        if (settings.getAuthentication() != null) {
+            settings.getAuthentication().addAuth(urlConnection, body);
+        }
+
+        writeData(urlConnection, body);
+
+        int rc = urlConnection.getResponseCode();
+        if (rc != 200) {
+            String data = slurpErrors(urlConnection);
+            if(rc >= 400 && rc < 500){
+                // no chance to recover form these errors and has to drop the log messages in order to avoid dead loop.
+                errorReporter.logInfo("Send queue cleared - drop log messages due to http 4xx error.");
+                sendBuffer.setLength(0);
+                bufferExceeded = false;
             }
-
-            writeData(urlConnection, body);
-
-            int rc = urlConnection.getResponseCode();
-            if (rc != 200) {
-                String data = slurpErrors(urlConnection);
-                if(rc >= 400 && rc < 500){
-                    // no chance to recover form these errors and has to drop the log messages in order to avoid dead loop.
-                    errorReporter.logInfo("Send queue cleared - drop log messages due to http 4xx error.");
-                    sendBuffer.setLength(0);
-                    bufferExceeded = false;
-                }
-                throw new IOException("Got response code [" + rc + "] from server with data " + data);
-            }
-        } finally {
-            urlConnection.disconnect();
+            throw new IOException("Got response code [" + rc + "] from server with data " + data);
         }
 
         sendBuffer.setLength(0);
@@ -128,12 +124,14 @@ public class ElasticsearchWriter implements SafeWriter {
 
     private void writeData(HttpURLConnection urlConnection, String body) throws IOException {
         if (this.compressedTransfer) {
-            try (Writer writer = new OutputStreamWriter(new GZIPOutputStream(urlConnection.getOutputStream()), "UTF-8")) {
+            try (OutputStream out = urlConnection.getOutputStream();
+                 Writer writer = new OutputStreamWriter(new GZIPOutputStream(out), "UTF-8")) {
                 writer.write(body);
                 writer.flush();
             }
         } else {
-            try (Writer writer = new OutputStreamWriter(urlConnection.getOutputStream(), "UTF-8")) {
+            try (OutputStream out = urlConnection.getOutputStream();
+                 Writer writer = new OutputStreamWriter(out, "UTF-8")) {
                 writer.write(body);
                 writer.flush();
             }
