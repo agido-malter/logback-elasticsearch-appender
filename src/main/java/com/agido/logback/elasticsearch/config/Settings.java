@@ -30,6 +30,8 @@ public class Settings {
     private Level autoStackTraceLevel = Level.OFF;
     private Operation operation = Operation.create;
 
+    private String timestampFormat;
+
     public String getIndex() {
         return index;
     }
@@ -67,6 +69,18 @@ public class Settings {
 
     public int getMaxRetries() {
         return maxRetries;
+    }
+
+    public void setAutoStackTraceLevel(Level autoStackTraceLevel) {
+        this.autoStackTraceLevel = autoStackTraceLevel;
+    }
+
+    public String getTimestampFormat() {
+        return timestampFormat;
+    }
+
+    public void setTimestampFormat(String timestampFormat) {
+        this.timestampFormat = timestampFormat;
     }
 
     public void setMaxRetries(int maxRetries) {
