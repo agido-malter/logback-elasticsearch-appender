@@ -143,6 +143,9 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
     public void setRawJsonMessage(boolean rawJsonMessage) {
         settings.setRawJsonMessage(rawJsonMessage);
     }
+    public void setTimestampFormat(String timestampFormat) {
+        settings.setTimestampFormat(timestampFormat);
+    }
 
     public void setIncludeMdc(boolean includeMdc) {
         settings.setIncludeMdc(includeMdc);

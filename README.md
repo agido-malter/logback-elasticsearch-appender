@@ -45,7 +45,7 @@ In your `logback.xml`:
             <objectSerialization>true</objectSerialization> <!-- optional (default false) -->
             <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
             <operation>index</operation> <!-- optional (supported: index, create, update, delete - default create) -->
-            
+            <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timestampFormat>  <!-- optional (default None  if set long to the timestamp milliseconds long value) -->
             <properties>
                 <!-- please note that <property> tags are also supported, esProperty was added for logback-1.3 compatibility -->
                 <esProperty>
