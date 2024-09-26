@@ -31,6 +31,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
             return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         }
     };
+    private ThreadLocal<DateFormat> customDateFormat=null;
 
     public static final String THREAD_NAME_PREFIX = "es-writer-";
 
@@ -71,6 +72,17 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
         this.propertyList = generatePropertyList(context, properties);
 
         this.propertySerializer = new PropertySerializer();
+
+        if(this.settings.getTimestampFormat()!=null && !"".equals(this.settings.getTimestampFormat())&& !"long".equals(this.settings.getTimestampFormat())){
+            final String f=this.settings.getTimestampFormat();
+            this.customDateFormat =new ThreadLocal<DateFormat>() {
+                @Override
+                protected DateFormat initialValue() {
+                    return new SimpleDateFormat(f);
+                }
+            };
+        }
+
     }
 
     public void close() {
@@ -221,7 +233,13 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
 
     protected abstract void serializeCommonFields(JsonGenerator gen, T event) throws IOException;
 
-    protected static String getTimestamp(long timestamp) {
+    protected  Object getTimestamp(long timestamp) {
+        if(settings.getTimestampFormat()!=null && "long".equals(settings.getTimestampFormat())){
+            return Long.valueOf(timestamp);
+        }
+        if(this.customDateFormat!=null){
+            return this.customDateFormat.get().format(new Date(timestamp));
+        }
         return DATE_FORMAT.get().format(new Date(timestamp));
     }
 
