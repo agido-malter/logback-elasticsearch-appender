@@ -38,7 +38,7 @@ public class PropertySerializerTest {
 
         // then
         assertThat(property.getType(), is(Property.Type.STRING));
-        verify(jsonGenerator).writeObject("propertyValue");
+        verify(jsonGenerator).writeObjectField(null, "propertyValue");
     }
 
     @Test
@@ -52,7 +52,7 @@ public class PropertySerializerTest {
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        verify(jsonGenerator).writeNumber(123);
+        verify(jsonGenerator).writeNumberField(null, 123);
     }
 
     @Test
@@ -66,7 +66,7 @@ public class PropertySerializerTest {
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        verify(jsonGenerator).writeObject("A123Z");
+        verify(jsonGenerator).writeObjectField(null, "A123Z");
     }
 
     @Test
@@ -80,7 +80,7 @@ public class PropertySerializerTest {
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        verify(jsonGenerator).writeNumber(12.30f);
+        verify(jsonGenerator).writeNumberField(null, 12.30f);
     }
 
     @Test
@@ -94,7 +94,7 @@ public class PropertySerializerTest {
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        verify(jsonGenerator).writeObject("A12.30Z");
+        verify(jsonGenerator).writeObjectField(null, "A12.30Z");
     }
 
     @Test
@@ -108,7 +108,7 @@ public class PropertySerializerTest {
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        verify(jsonGenerator).writeBoolean(true);
+        verify(jsonGenerator).writeBooleanField(null, true);
     }
 
     @Test
@@ -122,7 +122,7 @@ public class PropertySerializerTest {
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        verify(jsonGenerator).writeObject("AtrueZ");
+        verify(jsonGenerator).writeObjectField(null, "AtrueZ");
     }
 
     @Test
@@ -136,6 +136,6 @@ public class PropertySerializerTest {
         propertySerializer.serializeProperty(jsonGenerator, loggingEvent, new ClassicPropertyAndEncoder(property, context));
 
         // then
-        verify(jsonGenerator).writeObject("value");
+        verify(jsonGenerator).writeObjectField(null, "value");
     }
 }
