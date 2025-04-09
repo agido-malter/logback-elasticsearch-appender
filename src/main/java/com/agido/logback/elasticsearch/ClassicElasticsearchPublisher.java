@@ -10,9 +10,10 @@ import com.agido.logback.elasticsearch.util.AbstractPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ClassicPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
 import com.fasterxml.jackson.core.JsonGenerator;
+import org.slf4j.event.KeyValuePair;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
 
 public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublisher<ILoggingEvent> {
 
@@ -44,6 +45,15 @@ public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublishe
             for (Map.Entry<String, String> entry : event.getMDCPropertyMap().entrySet()) {
                 gen.writeObjectField(entry.getKey(), entry.getValue());
             }
+        }
+
+        if (settings.isIncludeKvp()) {
+          final List<KeyValuePair> kvps = event.getKeyValuePairs() != null ? event.getKeyValuePairs() : Collections.emptyList();
+          for (KeyValuePair kvp : kvps) {
+            if (kvp != null) {
+              gen.writeObjectField(kvp.key, kvp.value);
+            }
+          }
         }
     }
 }

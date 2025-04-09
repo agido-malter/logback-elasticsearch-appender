@@ -29,6 +29,7 @@ public class Settings {
     private boolean objectSerialization;
     private Level autoStackTraceLevel = Level.OFF;
     private Operation operation = Operation.create;
+    private boolean includeKvp;
 
     private String timestampFormat;
 
@@ -213,5 +214,13 @@ public class Settings {
 
     public Level getAutoStackTraceLevel() {
         return autoStackTraceLevel;
+    }
+
+    public boolean isIncludeKvp() {
+      return includeKvp;
+    }
+
+    public void setIncludeKvp(boolean includeKvp) {
+      this.includeKvp = includeKvp;
     }
 }
