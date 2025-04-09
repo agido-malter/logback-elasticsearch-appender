@@ -13,7 +13,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import org.slf4j.event.KeyValuePair;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublisher<ILoggingEvent> {
 
