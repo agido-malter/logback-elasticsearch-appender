@@ -94,6 +94,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     private JsonFactory buildJsonFactory(Settings settings) {
         if (settings.isObjectSerialization()) {
             ObjectMapper mapper = new ObjectMapper();
+            mapper.findAndRegisterModules();
             return mapper.getFactory();
         }
         return new JsonFactory();
