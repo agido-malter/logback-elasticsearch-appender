@@ -1,3 +1,10 @@
+v.3.0.15
+ * Add automatic jackson module registration
+
+v.3.0.14
+ * Add support for key-value-pairs set via fluent api
+ * optimized import
+
 v.3.0.13
  * fix: upgrade jackson-core to fix DoS vulnerability
  * fix: broken tests because of API change
