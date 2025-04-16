@@ -4,7 +4,7 @@
 
     <groupId>com.agido</groupId>
     <artifactId>logback-elasticsearch-appender</artifactId>
-    <version>3.0.14</version>
+    <version>3.0.15</version>
     <packaging>jar</packaging>
 
     <name>Logback Elasticsearch Appender</name>
