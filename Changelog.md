@@ -1,3 +1,6 @@
+v.3.0.16
+* Project migrated to central.sonatype.org
+
 v.3.0.15
  * Add automatic jackson module registration
 
