@@ -28,7 +28,7 @@ public class ElasticsearchWriter implements SafeWriter {
         this.settings = settings;
         this.headerList = headers != null && headers.getHeaders() != null
                 ? headers.getHeaders()
-                : Collections.<HttpRequestHeader>emptyList();
+                : Collections.emptyList();
 
         this.sendBuffer = new StringBuilder();
         compressedTransfer = false;
@@ -58,43 +58,62 @@ public class ElasticsearchWriter implements SafeWriter {
             return;
         }
 
-        HttpURLConnection urlConnection = (HttpURLConnection) (settings.getUrl().openConnection());
-        urlConnection.setDoInput(true);
-        urlConnection.setDoOutput(true);
-        urlConnection.setReadTimeout(settings.getReadTimeout());
-        urlConnection.setConnectTimeout(settings.getConnectTimeout());
-        urlConnection.setRequestMethod("POST");
+        HttpURLConnection urlConnection = null; 
+        try {
+            urlConnection = (HttpURLConnection) (settings.getUrl().openConnection());
+            urlConnection.setDoInput(true);
+            urlConnection.setDoOutput(true);
+            urlConnection.setReadTimeout(settings.getReadTimeout());
+            urlConnection.setConnectTimeout(settings.getConnectTimeout());
+            urlConnection.setRequestMethod("POST");
 
-        String body = sendBuffer.toString();
+            String body = sendBuffer.toString();
 
-        if (!headerList.isEmpty()) {
-            for (HttpRequestHeader header : headerList) {
-                urlConnection.setRequestProperty(header.getName(), header.getValue());
+            if (!headerList.isEmpty()) {
+                for (HttpRequestHeader header : headerList) {
+                    urlConnection.setRequestProperty(header.getName(), header.getValue());
+                }
             }
-        }
 
-        if (settings.getAuthentication() != null) {
-            settings.getAuthentication().addAuth(urlConnection, body);
-        }
+            if (settings.getAuthentication() != null) {
+                settings.getAuthentication().addAuth(urlConnection, body);
+            }
 
-        writeData(urlConnection, body);
+            writeData(urlConnection, body);
 
-        int rc = urlConnection.getResponseCode();
-        if (rc != 200) {
-            String data = slurpErrors(urlConnection);
-            if(rc >= 400 && rc < 500){
-                // no chance to recover form these errors and has to drop the log messages in order to avoid dead loop.
-                errorReporter.logInfo("Send queue cleared - drop log messages due to http 4xx error.");
-                sendBuffer.setLength(0);
+            int rc = urlConnection.getResponseCode();
+
+            if (rc == 200) {
+                // Consume response stream to enable connection reuse (keep-alive)
+                // HttpURLConnection requires full response consumption before reuse
+                try (InputStream is = urlConnection.getInputStream()) {
+                    byte[] buffer = new byte[1024];
+                    while (is.read(buffer) != -1) {
+                        // Consume response data
+                    }
+                }
+            } else {
+                String data = slurpErrors(urlConnection); 
+                if (rc >= 400 && rc < 500) {
+                    errorReporter.logInfo("Send queue cleared - drop log messages due to http 4xx error.");
+                    sendBuffer.setLength(0);
+                    bufferExceeded = false;
+                }
+                throw new IOException("Got response code [" + rc + "] from server with data " + data);
+            }
+
+            sendBuffer.setLength(0);
+            if (bufferExceeded) {
+                errorReporter.logInfo("Send queue cleared - log messages will no longer be lost");
                 bufferExceeded = false;
             }
-            throw new IOException("Got response code [" + rc + "] from server with data " + data);
-        }
-
-        sendBuffer.setLength(0);
-        if (bufferExceeded) {
-            errorReporter.logInfo("Send queue cleared - log messages will no longer be lost");
-            bufferExceeded = false;
+        } finally {
+            // Disconnect releases this HttpURLConnection instance. When response streams were fully
+            // consumed (as above), most JDKs retain the underlying socket in the keep-alive cache
+            // for reuse; disconnect() does not necessarily close the TCP connection.
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
         }
     }
 
