@@ -157,7 +157,18 @@ Authentication
 
 Authentication is a pluggable mechanism. You must specify the authentication class on the XML element itself. The currently supported classes are:
 
-* `com.agido.logback.elasticsearch.config.BasicAuthentication` - Username and password are taken from the URL (i.e. `http://username:password@yourserver/_bulk`)
+* `com.agido.logback.elasticsearch.config.BasicAuthentication` - Supports two configuration methods:
+  * **Recommended**: Use `<username>` and `<password>` elements (special characters work without encoding):
+    ```xml
+    <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication">
+        <username>myuser</username>
+        <password>p@ss€word#123</password>
+    </authentication>
+    ```
+  * **Legacy**: Credentials in URL (special characters must be URL-encoded, e.g., `@` → `%40`):
+    ```xml
+    <url>http://user:p%40ssword@yourserver/_bulk</url>
+    ```
 * `com.agido.logback.elasticsearch.config.AWSAuthentication` - Authenticate using the AWS SDK, for use with the [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) (note that you will also need to include `com.amazonaws:aws-java-sdk-core` as a dependency)
 
 Logback Access
