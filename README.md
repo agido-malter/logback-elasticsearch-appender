@@ -158,7 +158,7 @@ Authentication
 Authentication is a pluggable mechanism. You must specify the authentication class on the XML element itself. The currently supported classes are:
 
 * `com.agido.logback.elasticsearch.config.BasicAuthentication` - Supports two configuration methods:
-  * **Recommended**: Use `<username>` and `<password>` elements (special characters work without encoding):
+  * **Recommended**: Use `<username>` and `<password>` elements (no URL-encoding required):
     ```xml
     <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication">
         <username>myuser</username>
