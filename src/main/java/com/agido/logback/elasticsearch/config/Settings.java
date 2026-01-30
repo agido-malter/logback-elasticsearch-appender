@@ -30,6 +30,7 @@ public class Settings {
     private Level autoStackTraceLevel = Level.OFF;
     private Operation operation = Operation.create;
     private boolean includeKvp;
+    private int maxBatchSize = -1;  // -1 means unlimited
 
     private String timestampFormat;
 
@@ -222,5 +223,13 @@ public class Settings {
 
     public void setIncludeKvp(boolean includeKvp) {
       this.includeKvp = includeKvp;
+    }
+
+    public int getMaxBatchSize() {
+        return maxBatchSize;
+    }
+
+    public void setMaxBatchSize(int maxBatchSize) {
+        this.maxBatchSize = maxBatchSize;
     }
 }

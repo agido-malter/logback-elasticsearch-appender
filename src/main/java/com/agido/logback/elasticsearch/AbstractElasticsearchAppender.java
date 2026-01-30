@@ -184,4 +184,8 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
     public void setIncludeKvp(boolean includeKvp) {
       settings.setIncludeKvp(includeKvp);
     }
+
+    public void setMaxBatchSize(int maxBatchSize) {
+        settings.setMaxBatchSize(maxBatchSize);
+    }
 }

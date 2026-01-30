@@ -53,6 +53,9 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
 
     private final PropertySerializer propertySerializer;
 
+    // Reusable list to avoid allocation on each batch iteration
+    private final List<T> batchBuffer = new ArrayList<>();
+
     private Thread thread;
 
     public AbstractElasticsearchPublisher(Context context, ErrorReporter errorReporter, Settings settings, ElasticsearchProperties properties, HttpRequestHeaders headers) throws IOException {
@@ -143,29 +146,53 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
 
     public void run() {
         int currentTry = 1;
-        int maxRetries = settings.getMaxRetries();
+        final int maxRetries = settings.getMaxRetries();
+        final int sleepTime = settings.getSleepTime();
+        final int maxBatchSize = settings.getMaxBatchSize();
 
         while (true) {
             try {
-                try {
-                    Thread.sleep(settings.getSleepTime());
-                } catch (InterruptedException e) {
-                    // Interrupted - continue processing
-                }
-
-                // Drain queue (lock-free)
-                List<T> eventsCopy = new ArrayList<>();
+                // Drain queue FIRST (lock-free) - reduces latency
+                batchBuffer.clear();
                 T event;
-                while ((event = events.poll()) != null) {
-                    eventsCopy.add(event);
+                if (maxBatchSize > 0) {
+                    // Limited batch size
+                    while (batchBuffer.size() < maxBatchSize && (event = events.poll()) != null) {
+                        batchBuffer.add(event);
+                    }
+                } else {
+                    // Unlimited batch size (default, backward compatible)
+                    while ((event = events.poll()) != null) {
+                        batchBuffer.add(event);
+                    }
                 }
 
-                if (!eventsCopy.isEmpty()) {
+                // Sleep only if queue was empty - avoids unnecessary latency
+                if (batchBuffer.isEmpty()) {
+                    try {
+                        Thread.sleep(sleepTime);
+                    } catch (InterruptedException e) {
+                        // Interrupted - continue processing
+                    }
+
+                    // Try draining again after sleep
+                    if (maxBatchSize > 0) {
+                        while (batchBuffer.size() < maxBatchSize && (event = events.poll()) != null) {
+                            batchBuffer.add(event);
+                        }
+                    } else {
+                        while ((event = events.poll()) != null) {
+                            batchBuffer.add(event);
+                        }
+                    }
+                }
+
+                if (!batchBuffer.isEmpty()) {
                     currentTry = 1;
                 }
 
                 // Exit conditions
-                if (eventsCopy.isEmpty()) {
+                if (batchBuffer.isEmpty()) {
                     if (!outputAggregator.hasPendingData()) {
                         working.set(false);
                         // Race condition safety: check if new events arrived
@@ -181,8 +208,8 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
                     }
                 }
 
-                if (!eventsCopy.isEmpty()) {
-                    serializeEvents(jsonGenerator, eventsCopy, propertyList);
+                if (!batchBuffer.isEmpty()) {
+                    serializeEvents(jsonGenerator, batchBuffer, propertyList);
                 }
 
                 if (!outputAggregator.sendData()) {

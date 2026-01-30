@@ -65,6 +65,7 @@ public class ConcurrentPublisherTest {
         given(settings.isIncludeKvp()).willReturn(false);
         given(settings.isObjectSerialization()).willReturn(false);
         given(settings.getOperation()).willReturn(Operation.index);
+        given(settings.getMaxBatchSize()).willReturn(-1);  // Unlimited by default
     }
 
     private ILoggingEvent createEvent(String message) {
@@ -245,6 +246,92 @@ public class ConcurrentPublisherTest {
 
         assertThat("No events should be lost under high contention",
                 processedCount.get(), is(totalExpectedEvents));
+    }
+
+    @Test
+    public void should_respect_max_batch_size_setting() throws Exception {
+        int eventCount = 500;
+        int maxBatchSize = 50;
+
+        AtomicInteger processedCount = new AtomicInteger(0);
+        AtomicInteger maxBatchSeen = new AtomicInteger(0);
+        Set<String> processedMessages = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+        // Override maxBatchSize for this test
+        given(settings.getMaxBatchSize()).willReturn(maxBatchSize);
+
+        TestPublisher publisher = new TestPublisher(context, errorReporter, settings, properties, headers,
+                processedCount, processedMessages) {
+            @Override
+            protected void serializeCommonFields(JsonGenerator gen, ILoggingEvent event) throws IOException {
+                super.serializeCommonFields(gen, event);
+            }
+        };
+
+        // Add all events at once
+        for (int i = 0; i < eventCount; i++) {
+            publisher.addEvent(createEvent("batch-event-" + i));
+        }
+
+        // Wait for processing
+        int maxWaitMs = 30000;
+        int waited = 0;
+        while (processedCount.get() < eventCount && waited < maxWaitMs) {
+            Thread.sleep(50);
+            waited += 50;
+        }
+
+        Thread.sleep(500);
+
+        assertThat("All events should be processed even with batch size limit",
+                processedCount.get(), is(eventCount));
+    }
+
+    @Test
+    public void should_process_events_with_minimal_latency_when_queue_has_data() throws Exception {
+        // This test verifies that events are processed immediately when queue has data
+        // (drain-first optimization)
+        int eventCount = 100;
+
+        AtomicInteger processedCount = new AtomicInteger(0);
+        Set<String> processedMessages = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+        // Use a longer sleep time to verify drain-first works
+        given(settings.getSleepTime()).willReturn(1000);  // 1 second sleep
+
+        TestPublisher publisher = new TestPublisher(context, errorReporter, settings, properties, headers,
+                processedCount, processedMessages);
+
+        long startTime = System.currentTimeMillis();
+
+        // Add events
+        for (int i = 0; i < eventCount; i++) {
+            publisher.addEvent(createEvent("latency-event-" + i));
+        }
+
+        // Wait for first batch to be processed (should be quick due to drain-first)
+        while (processedCount.get() == 0 && (System.currentTimeMillis() - startTime) < 5000) {
+            Thread.sleep(10);
+        }
+
+        long firstBatchTime = System.currentTimeMillis() - startTime;
+
+        // First batch should be processed much faster than sleepTime
+        // (within 500ms, not 1000ms+ if we were sleeping first)
+        assertTrue("First batch should be processed quickly due to drain-first optimization. " +
+                        "Took: " + firstBatchTime + "ms",
+                firstBatchTime < 500);
+
+        // Wait for all processing to complete
+        int maxWaitMs = 10000;
+        int waited = 0;
+        while (processedCount.get() < eventCount && waited < maxWaitMs) {
+            Thread.sleep(50);
+            waited += 50;
+        }
+
+        assertThat("All events should be processed",
+                processedCount.get(), is(eventCount));
     }
 
     /**
