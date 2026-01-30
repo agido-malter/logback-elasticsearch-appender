@@ -20,6 +20,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
@@ -36,7 +38,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     public static final String THREAD_NAME_PREFIX = "es-writer-";
 
 
-    private volatile List<T> events;
+    private final ConcurrentLinkedQueue<T> events = new ConcurrentLinkedQueue<>();
     private ElasticsearchOutputAggregator outputAggregator;
     private List<AbstractPropertyAndEncoder<T>> propertyList;
 
@@ -47,9 +49,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     private ErrorReporter errorReporter;
     protected Settings settings;
 
-    private final Object lock;
-
-    private volatile boolean working;
+    private final AtomicBoolean working = new AtomicBoolean(false);
 
     private final PropertySerializer propertySerializer;
 
@@ -57,8 +57,6 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
 
     public AbstractElasticsearchPublisher(Context context, ErrorReporter errorReporter, Settings settings, ElasticsearchProperties properties, HttpRequestHeaders headers) throws IOException {
         this.errorReporter = errorReporter;
-        this.events = new ArrayList<T>();
-        this.lock = new Object();
         this.settings = settings;
 
         this.outputAggregator = configureOutputAggregator(settings, errorReporter, headers);
@@ -135,52 +133,55 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
             return;
         }
 
-        synchronized (lock) {
-            events.add(event);
-            if (!working) {
-                working = true;
-                thread = new Thread(this, THREAD_NAME_PREFIX + THREAD_COUNTER.getAndIncrement());
-                thread.start();
-            }
+        events.offer(event);
+
+        if (working.compareAndSet(false, true)) {
+            thread = new Thread(this, THREAD_NAME_PREFIX + THREAD_COUNTER.getAndIncrement());
+            thread.start();
         }
     }
 
     public void run() {
         int currentTry = 1;
         int maxRetries = settings.getMaxRetries();
+
         while (true) {
             try {
                 try {
                     Thread.sleep(settings.getSleepTime());
                 } catch (InterruptedException e) {
-                    // we are waking up the thread
+                    // Interrupted - continue processing
                 }
 
-                List<T> eventsCopy = null;
-                synchronized (lock) {
-                    if (!events.isEmpty()) {
-                        eventsCopy = events;
-                        events = new ArrayList<T>();
-                        currentTry = 1;
-                    }
+                // Drain queue (lock-free)
+                List<T> eventsCopy = new ArrayList<>();
+                T event;
+                while ((event = events.poll()) != null) {
+                    eventsCopy.add(event);
+                }
 
-                    if (eventsCopy == null) {
-                        if (!outputAggregator.hasPendingData()) {
-                            // all done
-                            working = false;
+                if (!eventsCopy.isEmpty()) {
+                    currentTry = 1;
+                }
+
+                // Exit conditions
+                if (eventsCopy.isEmpty()) {
+                    if (!outputAggregator.hasPendingData()) {
+                        working.set(false);
+                        // Race condition safety: check if new events arrived
+                        if (!events.isEmpty() && working.compareAndSet(false, true)) {
+                            continue;
+                        }
+                        return;
+                    } else {
+                        if (currentTry > maxRetries) {
+                            working.set(false);
                             return;
-                        } else {
-                            // Nothing new, must be a retry
-                            if (currentTry > maxRetries) {
-                                // Oh well, better luck next time
-                                working = false;
-                                return;
-                            }
                         }
                     }
                 }
 
-                if (eventsCopy != null) {
+                if (!eventsCopy.isEmpty()) {
                     serializeEvents(jsonGenerator, eventsCopy, propertyList);
                 }
 
