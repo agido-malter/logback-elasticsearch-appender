@@ -1,9 +1,13 @@
+v.3.0.19
+* Performance: Lock-free event queue + Batch size tuning with drain-first optimization
+* bump com.fasterxml.jackson.core to 2.18.6
+
 v.3.0.18
 * Fix: Special characters in Basic Authentication credentials
 
 v.3.0.17
 * Consume and close response InputStream on HTTP 200 to enable JDK keep-alive reuse
-# Always call disconnect() in finally; with fully consumed responses the TCP socket typically remains in the keep-alive cache
+* Always call disconnect() in finally; with fully consumed responses the TCP socket typically remains in the keep-alive cache
 
 v.3.0.16
 * Project migrated to central.sonatype.org
