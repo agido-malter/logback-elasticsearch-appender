@@ -2,53 +2,46 @@ package com.agido.logback.elasticsearch.config;
 
 import com.agido.logback.elasticsearch.util.Base64;
 
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URLDecoder;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class BasicAuthentication implements Authentication {
-    
+
     private volatile String cachedAuthHeader;
     private String username;
     private String password;
-    
+
     public void setUsername(String username) {
         this.username = username;
     }
-    
+
     public void setPassword(String password) {
         this.password = password;
     }
-    
-    public void addAuth(HttpURLConnection urlConnection, String body) {
+
+    /**
+     * @return true if both username and password have been configured explicitly.
+     */
+    public boolean hasCredentials() {
+        return username != null && password != null;
+    }
+
+    @Override
+    public void addAuth(Map<String, String> headers, URI uri, byte[] body) {
         if (cachedAuthHeader == null) {
-            cachedAuthHeader = buildAuthHeader(urlConnection);
+            cachedAuthHeader = buildAuthHeader();
         }
         if (cachedAuthHeader != null) {
-            urlConnection.setRequestProperty("Authorization", cachedAuthHeader);
+            headers.put("Authorization", cachedAuthHeader);
         }
     }
-    
-    private String buildAuthHeader(HttpURLConnection urlConnection) {
-        String credentials;
-        
-        // Prefer explicit username/password config
-        if (username != null && password != null) {
-            credentials = username + ":" + password;
-        } else {
-            // Fallback to URL userInfo (backward compatible)
-            String userInfo = urlConnection.getURL().getUserInfo();
-            if (userInfo == null) {
-                return null;
-            }
-            try {
-                credentials = URLDecoder.decode(userInfo, StandardCharsets.UTF_8.name());
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
+
+    private String buildAuthHeader() {
+        if (username == null || password == null) {
+            return null;
         }
-        
+        String credentials = username + ":" + password;
         return "Basic " + Base64.encode(credentials.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -1,148 +1,88 @@
 package com.agido.logback.elasticsearch.config;
 
-import com.amazonaws.ReadLimitInfo;
-import com.amazonaws.SignableRequest;
-import com.amazonaws.auth.AWS4Signer;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.http.HttpMethodName;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.util.StringInputStream;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.signer.Aws4Signer;
+import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
+import software.amazon.awssdk.http.SdkHttpFullRequest;
+import software.amazon.awssdk.http.SdkHttpMethod;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 
 /**
- * This class implements Amazon AWS v4 Signature signing for ElasticSearch.
+ * This class implements Amazon AWS v4 Signature signing for ElasticSearch,
+ * using the AWS SDK v2.
  *
  * @author blagerweij
  */
 public class AWSAuthentication implements Authentication {
 
-    private final AWS4Signer signer;
-    private final AWSCredentials credentials;
+    private final Aws4Signer signer;
+    private final AwsCredentialsProvider credentialsProvider;
+    private final String region;
+    private final Clock clock;
 
     public AWSAuthentication() {
-        signer = new AWS4Signer(false);
-        signer.setServiceName("es");
-        signer.setRegionName(getCurrentRegion());
-        AWSCredentialsProvider credsProvider = new DefaultAWSCredentialsProviderChain();
-        credentials = credsProvider.getCredentials();
-    }
-
-    @Override
-    public void addAuth(HttpURLConnection urlConnection, String body) {
-
-        signer.sign(new URLConnectionSignableRequest(urlConnection, body), credentials);
-    }
-
-    private String getCurrentRegion() {
-        if (Regions.getCurrentRegion() != null) {
-            return Regions.getCurrentRegion().getName();
-        }
-        return null;
+        this(DefaultCredentialsProvider.create(), resolveRegion(), Clock.systemUTC());
     }
 
     /**
-     * Wrapper for signing a HttpURLConnection
+     * Package-private constructor for testing: allows injecting credentials, region and clock.
      */
-    private static class URLConnectionSignableRequest implements SignableRequest<HttpURLConnection> {
+    AWSAuthentication(AwsCredentialsProvider credentialsProvider, Region region, Clock clock) {
+        this.signer = Aws4Signer.create();
+        this.credentialsProvider = credentialsProvider;
+        this.region = region != null ? region.id() : null;
+        this.clock = clock != null ? clock : Clock.systemUTC();
+    }
 
-        private final HttpURLConnection urlConnection;
-        private final String body;
-        private final Map<String, String> headers = new HashMap<>();
-
-        public URLConnectionSignableRequest(HttpURLConnection urlConnection, String body) {
-            this.urlConnection = urlConnection;
-            this.body = body;
-            addHeader("User-Agent", "ElasticSearchWriter/1.0");
-            addHeader("Accept", "*/*");
-            addHeader("Content-Type", "application/json");
-            addHeader("Content-Length", String.valueOf(body.length()));
-        }
-
-        @Override
-        public void addHeader(String name, String value) {
-            this.urlConnection.addRequestProperty(name, value);
-            headers.put(name, value);
-        }
-
-        @Override
-        public Map<String, String> getHeaders() {
-            return headers;
-        }
-
-        @Override
-        public String getResourcePath() {
-            return urlConnection.getURL().getPath();
-        }
-
-        @Override
-        public void addParameter(String name, String value) {
-
-        }
-
-        @Override
-        public Map<String, List<String>> getParameters() {
-            return Collections.emptyMap();
-        }
-
-        @Override
-        public URI getEndpoint() {
-            try {
-                URL u = urlConnection.getURL();
-                return new URI(u.getProtocol(), null, u.getHost(), u.getPort(), null, null, null);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public HttpMethodName getHttpMethod() {
-            return HttpMethodName.fromValue(urlConnection.getRequestMethod());
-        }
-
-        @Override
-        public int getTimeOffset() {
-            return 0;
-        }
-
-        @Override
-        public InputStream getContent() {
-            try {
-                return new StringInputStream(body);
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
-
-        }
-
-        @Override
-        public void setContent(InputStream content) {
-        }
-
-        @Override
-        public InputStream getContentUnwrapped() {
-            return getContent();
-        }
-
-        @Override
-        public ReadLimitInfo getReadLimitInfo() {
+    private static Region resolveRegion() {
+        try {
+            return new DefaultAwsRegionProviderChain().getRegion();
+        } catch (RuntimeException e) {
             return null;
         }
+    }
 
-        @Override
-        public Object getOriginalRequestObject() {
-            return null;
+    @Override
+    public void addAuth(Map<String, String> headers, URI uri, byte[] body) {
+        SdkHttpFullRequest request = SdkHttpFullRequest.builder()
+                .method(SdkHttpMethod.POST)
+                .uri(uri)
+                .contentStreamProvider(() -> new ByteArrayInputStream(body))
+                // The "required" token makes the Aws4Signer compute the payload hash, substitute it
+                // here, and include x-amz-content-sha256 in the SignedHeaders set.
+                .putHeader("x-amz-content-sha256", "required")
+                .build();
+
+        Aws4SignerParams params = Aws4SignerParams.builder()
+                .awsCredentials(credentialsProvider.resolveCredentials())
+                .signingRegion(region != null ? Region.of(region) : null)
+                .signingName("es")
+                .signingClockOverride(clock)
+                .build();
+
+        SdkHttpFullRequest signed = signer.sign(request, params);
+
+        copyHeader(signed, headers, "Authorization");
+        copyHeader(signed, headers, "X-Amz-Date");
+        copyHeader(signed, headers, "X-Amz-Content-Sha256");
+        copyHeader(signed, headers, "X-Amz-Security-Token");
+    }
+
+    private void copyHeader(SdkHttpFullRequest signed, Map<String, String> headers, String name) {
+        for (Map.Entry<String, List<String>> entry : signed.headers().entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(name)
+                    && entry.getValue() != null && !entry.getValue().isEmpty()) {
+                headers.put(name, entry.getValue().get(0));
+                return;
+            }
         }
     }
 }
