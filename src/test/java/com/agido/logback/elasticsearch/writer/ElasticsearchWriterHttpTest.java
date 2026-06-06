@@ -150,4 +150,30 @@ public class ElasticsearchWriterHttpTest {
         }
         assertEquals(payload, body);
     }
+
+    @Test
+    public void should_use_url_userinfo_for_basic_auth_end_to_end() throws Exception {
+        // Legacy form: credentials embedded in the URL userInfo (URL-encoded UTF-8), no explicit
+        // username/password configured. The writer must (a) strip userInfo before handing the URI to
+        // java.net.http.HttpClient (which rejects userInfo URIs) and (b) decode it and feed
+        // BasicAuthentication so the Authorization header is actually sent. This is the integrated
+        // replacement for the old BasicAuthentication "fallback to URL credentials" unit test.
+        stubFor(post(urlEqualTo("/_bulk")).willReturn(aResponse().withStatus(200)));
+
+        Settings settings = new Settings();
+        settings.setUrl(new URL("http://user:p%40ss%E2%82%ACw%C3%B6rd%23123@localhost:" + server.port() + "/_bulk"));
+        settings.setReadTimeout(5000);
+        settings.setConnectTimeout(5000);
+        settings.setAuthentication(new com.agido.logback.elasticsearch.config.BasicAuthentication());
+
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, "{\"index\":{}}\n");
+        writer.sendData(); // must NOT throw: userInfo is stripped before HttpClient sees the URI
+
+        assertFalse(writer.hasPendingData());
+        String expected = "Basic " + java.util.Base64.getEncoder()
+                .encodeToString("user:p@ss€wörd#123".getBytes(StandardCharsets.UTF_8));
+        verify(postRequestedFor(urlEqualTo("/_bulk"))
+                .withHeader("Authorization", equalTo(expected)));
+    }
 }
