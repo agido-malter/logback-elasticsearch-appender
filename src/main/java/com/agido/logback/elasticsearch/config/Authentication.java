@@ -1,13 +1,15 @@
 package com.agido.logback.elasticsearch.config;
 
-import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.Map;
 
 public interface Authentication {
     /**
-     * Modify the given urlConnection for whatever authentication scheme is used.
+     * Add authentication headers for whatever authentication scheme is used.
      *
-     * @param urlConnection the connection to the server
-     * @param body          the message being sent
+     * @param headers the mutable map of request headers; implementations add their auth headers here
+     * @param uri     the request URI (with any userInfo stripped off)
+     * @param body    the exact bytes that will be sent (already gzipped if compression is enabled)
      */
-    void addAuth(HttpURLConnection urlConnection, String body);
+    void addAuth(Map<String, String> headers, URI uri, byte[] body);
 }
