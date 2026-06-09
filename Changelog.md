@@ -1,3 +1,10 @@
+v.3.0.20
+* Update to JDK 11
+* ElasticsearchWriter — a single reused HttpClient instance (the connection pool); userInfo is stripped from the URI before sending (HttpClient rejects userInfo URIs); gzip transfer and the existing 200 / 4xx / error-response semantics are preserved.
+* AWSAuthentication — rewritten on AWS SDK v2 (Aws4Signer), service es. The ~50-line hand-rolled URLConnectionSignableRequest adapter (which coupled signing to HttpURLConnection) is deleted; v2 signs a client-agnostic request.
+* Authentication interface — now header-map based (addAuth(Map<String,String>, URI, byte[])), decoupled from any HTTP client.
+* pom.xml — drop com.amazonaws:aws-java-sdk-core (v1); add software.amazon.awssdk:auth + regions (BOM 2.28.16, provided scope, matching how the v1 SDK was provided).
+
 v.3.0.19
 * Performance: Lock-free event queue + Batch size tuning with drain-first optimization
 * bump com.fasterxml.jackson.core to 2.18.6
