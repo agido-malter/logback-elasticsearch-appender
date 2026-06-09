@@ -4,12 +4,6 @@ v.3.0.20
 * AWSAuthentication — rewritten on AWS SDK v2 (Aws4Signer), service es. The ~50-line hand-rolled URLConnectionSignableRequest adapter (which coupled signing to HttpURLConnection) is deleted; v2 signs a client-agnostic request.
 * Authentication interface — now header-map based (addAuth(Map<String,String>, URI, byte[])), decoupled from any HTTP client.
 * pom.xml — drop com.amazonaws:aws-java-sdk-core (v1); add software.amazon.awssdk:auth + regions (BOM 2.28.16, provided scope, matching how the v1 SDK was provided).
-Tests
-* All pre-existing tests still pass; ElasticsearchAppenderTest, ConcurrentPublisherTest, PropertySerializerTest are untouched.
-+ SigV4 known-answer test — fixed credentials + frozen clock; asserts x-amz-content-sha256 equals the independent SHA-256 of the payload and the full Authorization shape/signature.
-* WireMock transport tests — 200 path + JSON content-type, 4xx throws and clears the buffer, client reuse across two sends, and gzip round-trip.
-* End-to-end userInfo → Basic auth test — a user:pass@host URL with no explicit credentials: verifies the writer strips userInfo for HttpClient and still sends the correct Authorization header.
-
 
 v.3.0.19
 * Performance: Lock-free event queue + Batch size tuning with drain-first optimization
