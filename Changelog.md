@@ -1,3 +1,6 @@
+v.3.0.21
+* Dependency upgrades
+
 v.3.0.20
 * Update to JDK 11
 * ElasticsearchWriter — a single reused HttpClient instance (the connection pool); userInfo is stripped from the URI before sending (HttpClient rejects userInfo URIs); gzip transfer and the existing 200 / 4xx / error-response semantics are preserved.
