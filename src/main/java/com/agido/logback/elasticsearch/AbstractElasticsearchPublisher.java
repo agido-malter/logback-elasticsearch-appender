@@ -56,7 +56,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     // Reusable list to avoid allocation on each batch iteration
     private final List<T> batchBuffer = new ArrayList<>();
 
-    private Thread thread;
+    private volatile Thread thread;
 
     public AbstractElasticsearchPublisher(Context context, ErrorReporter errorReporter, Settings settings, ElasticsearchProperties properties, HttpRequestHeaders headers) throws IOException {
         this.errorReporter = errorReporter;
@@ -87,8 +87,16 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     }
 
     public void close() {
-        if (thread != null) {
-            thread.interrupt();
+        Thread worker = thread;
+        if (worker == null) {
+            return;
+        }
+
+        worker.interrupt();
+        try {
+            worker.join(settings.getShutdownTimeout());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
