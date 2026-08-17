@@ -17,6 +17,7 @@ public class Settings {
     private int maxRetries = 3;
     private int connectTimeout = 30000;
     private int readTimeout = 30000;
+    private int shutdownTimeout = 30000;
     private boolean logsToStderr;
     private boolean errorsToStderr;
     private boolean includeCallerData;
@@ -103,6 +104,17 @@ public class Settings {
 
     public void setReadTimeout(int readTimeout) {
         this.readTimeout = readTimeout;
+    }
+
+    public int getShutdownTimeout() {
+        return shutdownTimeout;
+    }
+
+    public void setShutdownTimeout(int shutdownTimeout) {
+        if (shutdownTimeout < 0) {
+            throw new IllegalArgumentException("shutdownTimeout must not be negative");
+        }
+        this.shutdownTimeout = shutdownTimeout;
     }
 
     public boolean isLogsToStderr() {

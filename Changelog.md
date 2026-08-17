@@ -1,3 +1,8 @@
+v.3.1.0
+* Removed the appender-specific JVM shutdown hook. Appender shutdown is now managed through the standard Logback lifecycle.
+* Added the configurable `shutdownTimeout` option (30 seconds by default).
+* Applications not managed by Spring Boot may need to configure Logback's shutdown hook or stop the `LoggerContext` programmatically.
+
 v.3.0.21
 * Dependency upgrades
 
