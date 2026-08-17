@@ -69,6 +69,25 @@ public class ElasticsearchAppenderTest {
     }
 
     @Test
+    public void should_close_publisher_when_stopped() {
+        appender.start();
+
+        appender.stop();
+
+        verify(elasticsearchPublisher).close();
+    }
+
+    @Test
+    public void should_close_publisher_only_once_when_stopped_repeatedly() {
+        appender.start();
+
+        appender.stop();
+        appender.stop();
+
+        verify(elasticsearchPublisher).close();
+    }
+
+    @Test
     public void should_throw_error_when_publisher_setup_fails_during_startup() {
         ElasticsearchAppender appender = new ElasticsearchAppender() {
             @Override
@@ -186,6 +205,7 @@ public class ElasticsearchAppenderTest {
         int aSleepTime = 10000;
         int readTimeout = 10000;
         int connectTimeout = 5000;
+        int shutdownTimeout = 15000;
         boolean includeKvp = true;
 
         appender.setIncludeCallerData(includeCallerData);
@@ -201,6 +221,7 @@ public class ElasticsearchAppenderTest {
         appender.setErrorLoggerName(errorLogger);
         appender.setMaxRetries(maxRetries);
         appender.setConnectTimeout(connectTimeout);
+        appender.setShutdownTimeout(shutdownTimeout);
         appender.setRawJsonMessage(rawJsonMessage);
         appender.setIncludeMdc(includeMdc);
         appender.setIncludeKvp(includeKvp);
@@ -218,6 +239,7 @@ public class ElasticsearchAppenderTest {
         verify(settings, times(1)).setErrorLoggerName(errorLogger);
         verify(settings, times(1)).setMaxRetries(maxRetries);
         verify(settings, times(1)).setConnectTimeout(connectTimeout);
+        verify(settings, times(1)).setShutdownTimeout(shutdownTimeout);
         verify(settings, times(1)).setRawJsonMessage(rawJsonMessage);
         verify(settings, times(1)).setIncludeMdc(includeMdc);
         verify(settings, times(1)).setIncludeKvp(includeKvp);

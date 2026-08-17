@@ -19,7 +19,7 @@ In your `pom.xml` (or equivalent), add:
      <dependency>
         <groupId>com.agido</groupId>
         <artifactId>logback-elasticsearch-appender</artifactId>
-        <version>3.0.11</version>
+        <version>3.1.0</version>
      </dependency>
 
 In your `logback.xml`:
@@ -37,6 +37,7 @@ In your `logback.xml`:
             <maxQueueSize>104857600</maxQueueSize> <!-- optional (default 104857600) -->
             <maxRetries>3</maxRetries> <!-- optional (default 3) -->
             <readTimeout>30000</readTimeout> <!-- optional (in ms, default 30000) -->
+            <shutdownTimeout>30000</shutdownTimeout> <!-- optional (in ms, default 30000) -->
             <sleepTime>250</sleepTime> <!-- optional (in ms, default 250) -->
             <maxBatchSize>-1</maxBatchSize> <!-- optional (default -1, unlimited) -->
             <rawJsonMessage>false</rawJsonMessage> <!-- optional (default false) -->
@@ -111,6 +112,7 @@ Configuration Reference
  * `maxRetries` (optional, default 3): Number of times to attempt retrying a message on failure. Note that subsequent log messages reset the retry count to 0. This value is important if your program is about to exit (i.e. it is not producing any more log lines) but is unable to deliver some messages to ES
  * `connectTimeout` (optional, default 30000): Elasticsearch connect timeout (in ms)
  * `readTimeout` (optional, default 30000): Elasticsearch read timeout (in ms)
+ * `shutdownTimeout` (optional, default 30000): Maximum time in milliseconds to wait for queued events to be sent when Logback stops the appender. Set to `0` to wait indefinitely.
  * `includeCallerData` (optional, default false): If set to `true`, save the caller data (identical to the [AsyncAppender's includeCallerData](http://logback.qos.ch/manual/appenders.html#asyncIncludeCallerData))
  * `errorsToStderr` (optional, default false): If set to `true`, any errors in communicating with Elasticsearch will also be dumped to stderr (normally they are only reported to the internal Logback Status system, in order to prevent a feedback loop)
  * `logsToStderr` (optional, default false): If set to `true`, dump the raw Elasticsearch messages to stderr
@@ -132,6 +134,61 @@ The fields `@timestamp` and `message` are always sent and can not currently be c
  * `value` (required): Text string to be sent. Internally, the value is populated using a Logback PatternLayout, so all [Conversion Words](http://logback.qos.ch/manual/layouts.html#conversionWord) can be used (in addition to the standard static variable interpolations like `${HOSTNAME}`).
  * `allowEmpty` (optional, default `false`): Normally, if the `value` results in a `null` or empty string, the field will not be sent. If `allowEmpty` is set to `true` then the field will be sent regardless
  * `type` (optional, default `String`): type of the field on the resulting JSON message. Possible values are: `String`, `int`, `float` and `boolean`.
+
+Shutdown Behavior
+=================
+
+The appender does not register its own JVM shutdown hook. Instead, it relies on the standard Logback lifecycle. When Logback stops the appender, it waits for queued events to be processed for up to `shutdownTimeout` milliseconds. The default timeout is 30 seconds:
+
+```xml
+<appender name="ELASTIC" class="com.agido.logback.elasticsearch.ElasticsearchAppender">
+    <!-- Other settings -->
+    <shutdownTimeout>30000</shutdownTimeout>
+</appender>
+```
+
+Set `shutdownTimeout` to `0` to wait indefinitely.
+
+### Spring Boot
+
+Spring Boot normally stops the Logback context automatically. Make sure its logging shutdown hook remains enabled:
+
+```yaml
+logging:
+  register-shutdown-hook: true
+```
+
+This is the default for executable JAR applications.
+
+### Applications without Spring Boot
+
+Applications that do not use Spring Boot must ensure that the Logback `LoggerContext` is stopped during application shutdown. You can configure Logback's shutdown hook:
+
+```xml
+<configuration>
+    <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
+
+    <!-- Appenders and loggers -->
+</configuration>
+```
+
+Alternatively, stop the context programmatically:
+
+```java
+LoggerContext context =
+        (LoggerContext) LoggerFactory.getILoggerFactory();
+
+Runtime.getRuntime().addShutdownHook(
+        new Thread(context::stop, "logback-shutdown")
+);
+```
+
+Do not register both approaches at the same time.
+
+> [!IMPORTANT]
+> Previous versions of the appender registered their own JVM shutdown hook.
+> Applications that relied on this implicit behavior must now configure Logback
+> shutdown explicitly or stop the `LoggerContext` programmatically.
 
 Groovy Configuration
 ====================

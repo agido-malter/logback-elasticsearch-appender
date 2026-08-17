@@ -66,6 +66,7 @@ public class ConcurrentPublisherTest {
         given(settings.isObjectSerialization()).willReturn(false);
         given(settings.getOperation()).willReturn(Operation.index);
         given(settings.getMaxBatchSize()).willReturn(-1);  // Unlimited by default
+        given(settings.getShutdownTimeout()).willReturn(30000);
     }
 
     private ILoggingEvent createEvent(String message) {
@@ -158,6 +159,24 @@ public class ConcurrentPublisherTest {
         Thread.sleep(500);
 
         assertThat("All burst events should be processed",
+                processedCount.get(), is(eventCount));
+    }
+
+    @Test
+    public void should_drain_queued_events_before_close_returns() throws Exception {
+        int eventCount = 1000;
+        AtomicInteger processedCount = new AtomicInteger(0);
+        Set<String> processedMessages = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        TestPublisher publisher = new TestPublisher(context, errorReporter, settings, properties, headers,
+                processedCount, processedMessages);
+
+        for (int i = 0; i < eventCount; i++) {
+            publisher.addEvent(createEvent("shutdown-event-" + i));
+        }
+
+        publisher.close();
+
+        assertThat("Close should wait until queued events are processed",
                 processedCount.get(), is(eventCount));
     }
 
