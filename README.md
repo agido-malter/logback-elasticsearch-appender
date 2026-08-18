@@ -406,14 +406,13 @@ for reproducible bugs and focused feature proposals.
 
 ## Security
 
-The repository runs CodeQL analysis and has a history of dependency and security
-updates. It does not currently include a dedicated `SECURITY.md` or published
-support window.
+The repository runs CodeQL analysis and has a history of dependency and
+security updates.
 
-For a suspected vulnerability, do not publish exploit details in a public issue.
-Contact a maintainer listed in `pom.xml` privately and include the affected
-version, impact, and a minimal reproduction. For application configuration,
-avoid credentials in repository-managed `logback.xml` files and use TLS for
+For supported versions and instructions for privately reporting a suspected
+vulnerability, see [`SECURITY.md`](SECURITY.md).
+
+Avoid credentials in repository-managed `logback.xml` files and use TLS for
 traffic that crosses an untrusted network.
 
 ## License
