@@ -1,244 +1,418 @@
-Logback Elasticsearch Appender
-===============================
+# Logback Elasticsearch Appender
 
-Send log events directly from Logback to Elasticsearch. Logs are delivered asynchronously (i.e. not on the main thread) so will not block execution of the program. Note that the queue backlog can be bounded and messages *can* be lost if Elasticsearch is down and either the backlog queue is full or the producer program is trying to exit (it will retry up to a configured number of attempts, but will not block shutdown of the program beyond that). For long-lived programs, this should not be a problem, as messages should be delivered eventually.
+[![Maven Central](https://img.shields.io/maven-central/v/com.agido/logback-elasticsearch-appender.svg)](https://central.sonatype.com/artifact/com.agido/logback-elasticsearch-appender)
+[![Test with Maven](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml/badge.svg)](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml)
+[![License: EPL-1.0 or LGPL-2.1](https://img.shields.io/badge/license-EPL--1.0%20or%20LGPL--2.1-blue.svg)](LICENSE.txt)
 
-This software is dual-licensed under the EPL 1.0 and LGPL 2.1, which is identical to the [Logback License](http://logback.qos.ch/license.html) itself.
+Send Logback events asynchronously to the Elasticsearch Bulk API.
 
-Info
-====
-This project is a fork of internetitem/logback-elasticsearch-appender, which was last committed in 2017. I decided to fork the project and detach it to continue development. Bugfixes and urgent PR were brought together in this project.
+This project is the **actively maintained successor to
+[`internetitem/logback-elasticsearch-appender`](https://github.com/internetitem/logback-elasticsearch-appender)**,
+whose last commit was in 2017. It continues the original project with bug fixes,
+dependency and security updates, Java 11 support, Logback 1.4 build coverage, and
+additional configuration options.
 
+> [!NOTE]
+> This README deliberately does not claim compatibility with untested Elasticsearch
+> versions or OpenSearch. See [Compatibility](#compatibility) for the exact guarantees
+> that can be derived from this repository.
 
-Usage
-=====
-Include slf4j and logback as usual (depending on this library will *not* automatically pull them in).
+## Quick start
 
-In your `pom.xml` (or equivalent), add:
+### 1. Add the dependency
 
-     <dependency>
-        <groupId>com.agido</groupId>
-        <artifactId>logback-elasticsearch-appender</artifactId>
-        <version>3.1.0</version>
-     </dependency>
-
-In your `logback.xml`:
-
-        <appender name="ELASTIC" class="com.agido.logback.elasticsearch.ElasticsearchAppender">
-            <url>http://yourserver/_bulk</url>
-            <index>logs-%date{yyyy-MM-dd}</index>
-            <type>tester</type>
-            <loggerName>es-logger</loggerName> <!-- optional -->
-            <errorLoggerName>es-error-logger</errorLoggerName> <!-- optional -->
-            <connectTimeout>30000</connectTimeout> <!-- optional (in ms, default 30000) -->
-            <errorsToStderr>false</errorsToStderr> <!-- optional (default false) -->
-            <includeCallerData>false</includeCallerData> <!-- optional (default false) -->
-            <logsToStderr>false</logsToStderr> <!-- optional (default false) -->
-            <maxQueueSize>104857600</maxQueueSize> <!-- optional (default 104857600) -->
-            <maxRetries>3</maxRetries> <!-- optional (default 3) -->
-            <readTimeout>30000</readTimeout> <!-- optional (in ms, default 30000) -->
-            <shutdownTimeout>30000</shutdownTimeout> <!-- optional (in ms, default 30000) -->
-            <sleepTime>250</sleepTime> <!-- optional (in ms, default 250) -->
-            <maxBatchSize>-1</maxBatchSize> <!-- optional (default -1, unlimited) -->
-            <rawJsonMessage>false</rawJsonMessage> <!-- optional (default false) -->
-            <includeMdc>false</includeMdc> <!-- optional (default false) -->
-            <includeKvp>false</includeKvp> <!-- optional (default false) -->
-            <maxMessageSize>100</maxMessageSize> <!-- optional (default -1 -->
-            <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication" /> <!-- optional -->
-            <objectSerialization>true</objectSerialization> <!-- optional (default false) -->
-            <keyPrefix>data.</keyPrefix> <!-- optional (default None) -->
-            <operation>index</operation> <!-- optional (supported: index, create, update, delete - default create) -->
-            <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timestampFormat>  <!-- optional (default None  if set long to the timestamp milliseconds long value) -->
-            <properties>
-                <!-- please note that <property> tags are also supported, esProperty was added for logback-1.3 compatibility -->
-                <esProperty>
-                    <name>host</name>
-                    <value>${HOSTNAME}</value>
-                    <allowEmpty>false</allowEmpty>
-                </esProperty>
-                <esProperty>
-                    <name>severity</name>
-                    <value>%level</value>
-                </esProperty>
-                <esProperty>
-                    <name>thread</name>
-                    <value>%thread</value>
-                </esProperty>
-                <esProperty>
-                    <name>stacktrace</name>
-                    <value>%ex</value>
-                </esProperty>
-                <esProperty>
-                    <name>logger</name>
-                    <value>%logger</value>
-                </esProperty>
-            </properties>
-            <headers>
-                <header>
-                    <name>Content-Type</name>
-                    <value>application/json</value>
-                </header>
-            </headers>
-        </appender>
-
-        <root level="info">
-            <appender-ref ref="FILELOGGER" />
-            <appender-ref ref="ELASTIC" />
-        </root>
-
-        <logger name="es-error-logger" level="INFO" additivity="false">
-            <appender-ref ref="FILELOGGER" />
-        </logger>
-
-        <logger name="es-logger" level="INFO" additivity="false">
-            <appender name="ES_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-                <!-- ... -->
-                <encoder>
-                    <pattern>%msg</pattern> <!-- This pattern is important, otherwise it won't be the raw Elasticsearch format anyomre -->
-                </encoder>
-            </appender>
-        </logger>
-
-
-
-Configuration Reference
-=======================
-
- * `url` (required): The URL to your Elasticsearch bulk API endpoint
- * `index` (required): Name if the index to publish to (populated using PatternLayout just like individual properties - see below)
- * `type` (optional): Elasticsearch `_type` field for records. Although this library does not require `type` to be populated, Elasticsearch may, unless the configured URL includes the type (i.e. `{index}/{type}/_bulk` as opposed to `/_bulk` and `/{index}/_bulk`). See the Elasticsearch [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html) documentation for more information
- * `sleepTime` (optional, default 250): Time (in ms) to sleep when the event queue is empty. Note: the appender drains the queue first before sleeping, so this only affects idle periods
- * `maxBatchSize` (optional, default -1): Maximum number of events to process in a single batch. Set to -1 for unlimited (drain entire queue). Useful for controlling memory usage and ensuring predictable batch sizes
- * `maxRetries` (optional, default 3): Number of times to attempt retrying a message on failure. Note that subsequent log messages reset the retry count to 0. This value is important if your program is about to exit (i.e. it is not producing any more log lines) but is unable to deliver some messages to ES
- * `connectTimeout` (optional, default 30000): Elasticsearch connect timeout (in ms)
- * `readTimeout` (optional, default 30000): Elasticsearch read timeout (in ms)
- * `shutdownTimeout` (optional, default 30000): Maximum time in milliseconds to wait for queued events to be sent when Logback stops the appender. Set to `0` to wait indefinitely.
- * `includeCallerData` (optional, default false): If set to `true`, save the caller data (identical to the [AsyncAppender's includeCallerData](http://logback.qos.ch/manual/appenders.html#asyncIncludeCallerData))
- * `errorsToStderr` (optional, default false): If set to `true`, any errors in communicating with Elasticsearch will also be dumped to stderr (normally they are only reported to the internal Logback Status system, in order to prevent a feedback loop)
- * `logsToStderr` (optional, default false): If set to `true`, dump the raw Elasticsearch messages to stderr
- * `maxQueueSize` (optional, default 104,857,600 = 200MB): Maximum size (in characters) of the send buffer. After this point, *logs will be dropped*. This should only happen if Elasticsearch is down, but this is a self-protection mechanism to ensure that the logging system doesn't cause the main process to run out of memory. Note that this maximum is approximate; once the maximum is hit, no new logs will be accepted until it shrinks, but any logs already accepted to be processed will still be added to the buffer
- * `loggerName` (optional): If set, raw ES-formatted log data will be sent to this logger
- * `errorLoggerName` (optional): If set, any internal errors or problems will be logged to this logger
- * `rawJsonMessage` (optional, default false): If set to `true`, the log message is interpreted as pre-formatted raw JSON message.
- * `includeMdc` (optional, default false): If set to `true`, then all [MDC](http://www.slf4j.org/api/org/slf4j/MDC.html) values will be mapped to properties on the JSON payload.
- * `includeKvp` (optional, default false): If set to `true`, then all key-value-pairs set via [LoggingEventBuilder](https://slf4j.org/api/org/slf4j/spi/LoggingEventBuilder.html) using the [Fluent API](https://slf4j.org/manual.html#fluent) will be mapped to properties on the JSON payload.
- * `maxMessageSize` (optional, default -1): If set to a number greater than 0, truncate messages larger than this length, then append "`..`" to denote that the message was truncated
- * `authentication` (optional): Add the ability to send authentication headers (see below)
- * `objectSerialization` (optional): specifies whether to use POJO to JSON serialization 
- * `keyPrefix` (optional): objects logged within a message will also be logged separately with this prefix added
- * `operation` (optional, default create): Possible values are: `index`, `create`, `update` & `delete`, see the Elasticsearch [Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html) documentation for more information
-
-The fields `@timestamp` and `message` are always sent and can not currently be configured. Additional fields can be sent by adding `<esProperty>` elements to the `<properties>` set.
-
- * `name` (required): Key to be used in the log event
- * `value` (required): Text string to be sent. Internally, the value is populated using a Logback PatternLayout, so all [Conversion Words](http://logback.qos.ch/manual/layouts.html#conversionWord) can be used (in addition to the standard static variable interpolations like `${HOSTNAME}`).
- * `allowEmpty` (optional, default `false`): Normally, if the `value` results in a `null` or empty string, the field will not be sent. If `allowEmpty` is set to `true` then the field will be sent regardless
- * `type` (optional, default `String`): type of the field on the resulting JSON message. Possible values are: `String`, `int`, `float` and `boolean`.
-
-Shutdown Behavior
-=================
-
-The appender does not register its own JVM shutdown hook. Instead, it relies on the standard Logback lifecycle. When Logback stops the appender, it waits for queued events to be processed for up to `shutdownTimeout` milliseconds. The default timeout is 30 seconds:
+The current project version is `3.1.0`, as declared in `pom.xml` and
+`Changelog.md`.
 
 ```xml
-<appender name="ELASTIC" class="com.agido.logback.elasticsearch.ElasticsearchAppender">
-    <!-- Other settings -->
-    <shutdownTimeout>30000</shutdownTimeout>
-</appender>
+<dependency>
+    <groupId>com.agido</groupId>
+    <artifactId>logback-elasticsearch-appender</artifactId>
+    <version>3.1.0</version>
+</dependency>
 ```
 
-Set `shutdownTimeout` to `0` to wait indefinitely.
+Gradle:
 
-### Spring Boot
+```groovy
+implementation "com.agido:logback-elasticsearch-appender:3.1.0"
+```
 
-Spring Boot normally stops the Logback context automatically. Make sure its logging shutdown hook remains enabled:
+Logback, Logback Access, SLF4J, and the AWS SDK modules are declared with
+`provided` scope. Your application must supply the components it uses.
+
+### 2. Add a minimal `logback.xml`
+
+```xml
+<configuration>
+    <appender name="ELASTIC"
+              class="com.agido.logback.elasticsearch.ElasticsearchAppender">
+        <url>http://localhost:9200/_bulk</url>
+        <index>application-%date{yyyy-MM-dd}</index>
+        <headers>
+            <header>
+                <name>Content-Type</name>
+                <value>application/json</value>
+            </header>
+        </headers>
+        <properties>
+            <esProperty>
+                <name>level</name>
+                <value>%level</value>
+            </esProperty>
+            <esProperty>
+                <name>logger</name>
+                <value>%logger</value>
+            </esProperty>
+            <esProperty>
+                <name>thread</name>
+                <value>%thread</value>
+            </esProperty>
+            <esProperty>
+                <name>stacktrace</name>
+                <value>%ex</value>
+            </esProperty>
+        </properties>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ELASTIC"/>
+    </root>
+</configuration>
+```
+
+The appender always sends `@timestamp` and `message`. The example adds four
+fields generated by Logback's `PatternLayout`.
+
+## Compatibility
+
+The repository establishes the following compatibility baseline:
+
+| Component | Repository-backed status for 3.1.0 |
+| --- | --- |
+| Java | Compiled with `--release 11`; Java 11 is the bytecode and CI baseline |
+| Logback Classic | Built and tested with `1.4.13`; dependency scope is `provided` |
+| Logback Access | Compiled against `1.4.13`; dependency scope is `provided` |
+| SLF4J | Compiled against `2.0.18`; dependency scope is `provided` |
+| Elasticsearch | Sends HTTP POST requests to the configured Bulk API URL; HTTP behavior is covered by WireMock tests, not a matrix of Elasticsearch server versions |
+| OpenSearch | Not documented or tested in this repository; no compatibility claim is made |
+
+Newer Java, Logback, SLF4J, Elasticsearch, or OpenSearch combinations may work,
+but they are not guaranteed by the current build and test configuration. If you
+depend on a specific combination, run the test suite and an integration test
+against that stack before deploying.
+
+## Migrating from the original `internetitem` project
+
+This project is a maintained continuation, but it is **not documented as a
+drop-in replacement**. Migrate explicitly:
+
+1. Replace the dependency coordinates with
+   `com.agido:logback-elasticsearch-appender:3.1.0`.
+2. Change appender class names from `com.internetitem.logback.elasticsearch.*`
+   to `com.agido.logback.elasticsearch.*`.
+3. In XML configuration, prefer `<esProperty>` inside `<properties>`. The
+   original `<property>` element remains supported; `<esProperty>` was added for
+   Logback 1.3 compatibility.
+4. Review authentication and shutdown configuration described below.
+5. Test delivery, retries, queue limits, and index mappings in a non-production
+   environment.
+
+Deprecated compatibility classes remain for these original appender names:
+
+- `com.internetitem.logback.elasticsearch.ElasticsearchAppender`
+- `com.internetitem.logback.elasticsearch.ElasticsearchAccessAppender`
+- `com.internetitem.logback.elasticsearch.StructuredArgsElasticsearchAppender`
+
+They extend their `com.agido` equivalents, but are marked for removal. New and
+migrated configurations should use the `com.agido` package.
+
+### Important change in 3.1.0: shutdown lifecycle
+
+Version 3.1.0 removes the appender-specific JVM shutdown hook. Shutdown now uses
+the standard Logback lifecycle, and the appender waits up to `shutdownTimeout`
+(30 seconds by default) for queued events.
+
+Spring Boot normally stops Logback automatically. Keep its logging shutdown hook
+enabled:
 
 ```yaml
 logging:
   register-shutdown-hook: true
 ```
 
-This is the default for executable JAR applications.
-
-### Applications without Spring Boot
-
-Applications that do not use Spring Boot must ensure that the Logback `LoggerContext` is stopped during application shutdown. You can configure Logback's shutdown hook:
+For applications without Spring Boot, configure Logback's shutdown hook:
 
 ```xml
 <configuration>
     <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
-
     <!-- Appenders and loggers -->
 </configuration>
 ```
 
-Alternatively, stop the context programmatically:
+Or stop the context programmatically:
 
 ```java
-LoggerContext context =
-        (LoggerContext) LoggerFactory.getILoggerFactory();
-
+LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
 Runtime.getRuntime().addShutdownHook(
         new Thread(context::stop, "logback-shutdown")
 );
 ```
 
-Do not register both approaches at the same time.
+Do not register both approaches. Set `<shutdownTimeout>0</shutdownTimeout>` to
+wait indefinitely.
 
-> [!IMPORTANT]
-> Previous versions of the appender registered their own JVM shutdown hook.
-> Applications that relied on this implicit behavior must now configure Logback
-> shutdown explicitly or stop the `LoggerContext` programmatically.
+## Configuration
 
-Groovy Configuration
-====================
+The following example shows the available settings. Only `url` and `index` are
+required for Elasticsearch delivery.
 
-If you configure logback using `logback.groovy`, this can be configured as follows:
+```xml
+<appender name="ELASTIC"
+          class="com.agido.logback.elasticsearch.ElasticsearchAppender">
+    <url>http://yourserver/_bulk</url>
+    <index>logs-%date{yyyy-MM-dd}</index>
+    <type>tester</type>
+    <loggerName>es-logger</loggerName>
+    <errorLoggerName>es-error-logger</errorLoggerName>
+    <connectTimeout>30000</connectTimeout>
+    <readTimeout>30000</readTimeout>
+    <shutdownTimeout>30000</shutdownTimeout>
+    <sleepTime>250</sleepTime>
+    <maxQueueSize>104857600</maxQueueSize>
+    <maxRetries>3</maxRetries>
+    <maxBatchSize>-1</maxBatchSize>
+    <includeCallerData>false</includeCallerData>
+    <errorsToStderr>false</errorsToStderr>
+    <logsToStderr>false</logsToStderr>
+    <rawJsonMessage>false</rawJsonMessage>
+    <includeMdc>false</includeMdc>
+    <includeKvp>false</includeKvp>
+    <maxMessageSize>-1</maxMessageSize>
+    <objectSerialization>false</objectSerialization>
+    <keyPrefix>data.</keyPrefix>
+    <operation>create</operation>
+    <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timestampFormat>
 
-      import com.agido.logback.elasticsearch.ElasticsearchAppender
+    <properties>
+        <esProperty>
+            <name>host</name>
+            <value>${HOSTNAME}</value>
+            <allowEmpty>false</allowEmpty>
+        </esProperty>
+        <esProperty>
+            <name>severity</name>
+            <value>%level</value>
+        </esProperty>
+    </properties>
 
-      appender("ELASTIC", ElasticsearchAppender){
-      	url = 'http://yourserver/_bulk'
-      	index = 'logs-%date{yyyy-MM-dd}'
-      	type = 'log'
-      	rawJsonMessage = true
-      	errorsToStderr = true
-      	authentication = new BasicAuthentication()
-      	def configHeaders = new HttpRequestHeaders()
-      	configHeaders.addHeader(new HttpRequestHeader(name: 'Content-Type', value: 'text/plain'))
-      	headers = configHeaders
-      }
+    <headers>
+        <header>
+            <name>Content-Type</name>
+            <value>application/json</value>
+        </header>
+    </headers>
+</appender>
+```
 
-      root(INFO, ["ELASTIC"])
+### Configuration reference
 
-Authentication
-==============
+- `url` (required): Elasticsearch Bulk API endpoint.
+- `index` (required): Target index. Supports Logback `PatternLayout` conversion
+  words, for example `logs-%date{yyyy-MM-dd}`.
+- `type` (optional): Adds `_type` to each bulk action. Only configure this when
+  required by your Elasticsearch API and mapping.
+- `sleepTime` (default `250` ms, minimum `100`): Delay when the event queue is
+  empty. The queue is drained before sleeping.
+- `maxBatchSize` (default `-1`): Maximum events per batch. A positive number
+  limits the batch; `-1` drains the entire queue.
+- `maxRetries` (default `3`): Retry attempts for pending data. A later event
+  resets the retry count.
+- `connectTimeout` (default `30000` ms): HTTP connection timeout.
+- `readTimeout` (default `30000` ms): HTTP request timeout.
+- `shutdownTimeout` (default `30000` ms): Maximum wait for the worker during
+  Logback shutdown. `0` waits indefinitely.
+- `maxQueueSize` (default `104857600` characters): Approximate send-buffer
+  limit. New log data is dropped while the limit is exceeded.
+- `includeCallerData` (default `false`): Capture caller data before asynchronous
+  processing.
+- `errorsToStderr` (default `false`): Also write delivery errors to stderr.
+  Errors otherwise use Logback's internal status system.
+- `logsToStderr` (default `false`): Write raw Bulk API payloads to stderr.
+- `loggerName` (optional): Send raw Bulk API payloads to this logger.
+- `errorLoggerName` (optional): Send internal errors to this logger.
+- `rawJsonMessage` (default `false`): Treat the log message as preformatted JSON.
+- `includeMdc` (default `false`): Add all MDC values to the JSON payload.
+- `includeKvp` (default `false`): Add key-value pairs created with SLF4J's fluent
+  `LoggingEventBuilder` API.
+- `maxMessageSize` (default `-1`): For values greater than `0`, truncate longer
+  messages and append `..`.
+- `authentication` (optional): Authentication implementation; see
+  [Authentication](#authentication).
+- `objectSerialization` (default `false`): Enable Jackson POJO-to-JSON
+  serialization and automatic module discovery.
+- `keyPrefix` (optional): Prefix for objects extracted from a structured message.
+- `operation` (default `create`): Bulk operation: `index`, `create`, `update`, or
+  `delete`.
+- `timestampFormat` (optional): Custom timestamp format. Use `long` for epoch
+  milliseconds.
 
-Authentication is a pluggable mechanism. You must specify the authentication class on the XML element itself. The currently supported classes are:
+The `@timestamp` and `message` fields are always sent. Additional fields use
+`<esProperty>` entries:
 
-* `com.agido.logback.elasticsearch.config.BasicAuthentication` - Supports two configuration methods:
-  * **Recommended**: Use `<username>` and `<password>` elements (no URL-encoding required):
-    ```xml
-    <authentication class="com.agido.logback.elasticsearch.config.BasicAuthentication">
-        <username>myuser</username>
-        <password>p@ss€word#123</password>
-    </authentication>
-    ```
-  * **Legacy**: Credentials in URL (special characters must be URL-encoded, e.g., `@` → `%40`):
-    ```xml
-    <url>http://user:p%40ssword@yourserver/_bulk</url>
-    ```
-* `com.agido.logback.elasticsearch.config.AWSAuthentication` - Authenticate using the AWS SDK, for use with the [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) (note that you will also need to include `com.amazonaws:aws-java-sdk-core` as a dependency)
+- `name` (required): JSON field name.
+- `value` (required): Value rendered through Logback `PatternLayout`, including
+  conversion words and substitutions such as `${HOSTNAME}`.
+- `allowEmpty` (default `false`): Include a field whose rendered value is null or
+  empty.
+- `type` (default `String`): One of `String`, `int`, `float`, or `boolean`.
 
-Logback Access
-==============
+## Authentication
 
-Included is also an Elasticsearch appender for Logback Access. The configuration is almost identical, with the following two differences:
+### Basic authentication
 
- * The Appender class name is `com.agido.logback.elasticsearch.ElasticsearchAccessAppender`
- * The `value` for each `esProperty` uses the [Logback Access conversion words](http://logback.qos.ch/manual/layouts.html#logback-access).
+Prefer explicit credentials; they do not require URL encoding:
 
-Prevent Major API change
-========================
+```xml
+<authentication
+        class="com.agido.logback.elasticsearch.config.BasicAuthentication">
+    <username>myuser</username>
+    <password>p@ss€word#123</password>
+</authentication>
+```
 
-To prevent a major and/or breaking API change, the old packagename com.internetitem could also used
+Credentials embedded in the URL remain supported for migration, but special
+characters must be URL-encoded:
+
+```xml
+<url>http://user:p%40ssword@yourserver/_bulk</url>
+<authentication
+        class="com.agido.logback.elasticsearch.config.BasicAuthentication"/>
+```
+
+Avoid committing credentials to source control. Prefer environment-based
+Logback substitutions or another secrets-injection mechanism.
+
+### AWS Signature Version 4
+
+`com.agido.logback.elasticsearch.config.AWSAuthentication` signs requests using
+AWS SDK v2. The project declares `software.amazon.awssdk:auth` and
+`software.amazon.awssdk:regions` with `provided` scope, so applications using
+this authentication class must supply those modules. Credentials and region are
+resolved through the AWS SDK default provider chains.
+
+## Additional examples
+
+### MDC and fluent key-value pairs
+
+```xml
+<includeMdc>true</includeMdc>
+<includeKvp>true</includeKvp>
+```
+
+`includeKvp` applies to key-value pairs added through SLF4J 2's fluent API.
+
+### Raw JSON messages
+
+```xml
+<rawJsonMessage>true</rawJsonMessage>
+```
+
+With this option enabled, the message is inserted as preformatted JSON. Only use
+it when the application controls and validates the JSON content.
+
+### Logback Access
+
+For access events, use:
+
+```xml
+<appender name="ELASTIC_ACCESS"
+          class="com.agido.logback.elasticsearch.ElasticsearchAccessAppender">
+    <!-- Same core settings as above -->
+</appender>
+```
+
+Property values use Logback Access conversion words.
+
+### Groovy configuration
+
+```groovy
+import com.agido.logback.elasticsearch.ElasticsearchAppender
+import com.agido.logback.elasticsearch.config.BasicAuthentication
+import com.agido.logback.elasticsearch.config.HttpRequestHeader
+import com.agido.logback.elasticsearch.config.HttpRequestHeaders
+
+appender("ELASTIC", ElasticsearchAppender) {
+    url = "http://yourserver/_bulk"
+    index = "logs-%date{yyyy-MM-dd}"
+    rawJsonMessage = true
+    errorsToStderr = true
+    authentication = new BasicAuthentication()
+    def configHeaders = new HttpRequestHeaders()
+    configHeaders.addHeader(new HttpRequestHeader(
+            name: "Content-Type", value: "application/json"))
+    headers = configHeaders
+}
+
+root(INFO, ["ELASTIC"])
+```
+
+## Delivery behavior and operational limits
+
+Delivery happens on a worker thread rather than the application's calling
+thread. This keeps logging calls from waiting on Elasticsearch, but it is not a
+durable queue:
+
+- Logs can be lost when Elasticsearch is unavailable and the bounded send buffer
+  fills.
+- Pending logs can remain unsent when retries are exhausted or shutdown reaches
+  `shutdownTimeout`.
+- HTTP `4xx` responses clear the current send buffer; other failures are retried
+  according to `maxRetries`.
+- The appender uses the configured Bulk API URL directly. It does not discover
+  cluster nodes or manage index templates and mappings.
+
+For workloads that require durable, guaranteed delivery, use an external log
+shipper or queue between the application and Elasticsearch.
+
+## Project status
+
+This fork exists to continue development of the unmaintained original project.
+The current `3.1.0` line adds standard Logback lifecycle shutdown and a
+configurable shutdown timeout. Earlier 3.x releases include dependency and
+security updates, HTTP client improvements, Logback 1.3 configuration support,
+SLF4J fluent key-value pairs, and AWS SDK v2 signing. See
+[`Changelog.md`](Changelog.md) for the release history.
+
+The Maven build runs unit and HTTP-level tests, and the repository contains
+GitHub Actions workflows for Maven tests and CodeQL analysis. There is currently
+no Elasticsearch server-version integration-test matrix.
+
+## Contributing
+
+Issues and pull requests are welcome. Before submitting a change:
+
+1. Base it on the repository's active development branch.
+2. Add or update tests for behavioral changes.
+3. Run `mvn test` with Java 11 or later.
+4. Update `Changelog.md` when the change affects users.
+
+Use the [issue tracker](https://github.com/agido-malter/logback-elasticsearch-appender/issues)
+for reproducible bugs and focused feature proposals.
+
+## Security
+
+The repository runs CodeQL analysis and has a history of dependency and security
+updates. It does not currently include a dedicated `SECURITY.md` or published
+support window.
+
+For a suspected vulnerability, do not publish exploit details in a public issue.
+Contact a maintainer listed in `pom.xml` privately and include the affected
+version, impact, and a minimal reproduction. For application configuration,
+avoid credentials in repository-managed `logback.xml` files and use TLS for
+traffic that crosses an untrusted network.
+
+## License
+
+This project is dual-licensed under the Eclipse Public License 1.0 or the GNU
+Lesser General Public License 2.1. See [`LICENSE.txt`](LICENSE.txt).
