@@ -23,26 +23,10 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
     public AbstractElasticsearchAppender() {
         this.settings = new Settings();
         this.headers = new HttpRequestHeaders();
-        registerShutdownHook();
     }
 
     public AbstractElasticsearchAppender(Settings settings) {
         this.settings = settings;
-        registerShutdownHook();
-    }
-
-    private void registerShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
-    }
-
-    private class ShutdownHook implements Runnable {
-        @Override
-        public void run() {
-            stop();
-            if (publisher != null) {
-                publisher.close();
-            }
-        }
     }
 
     @Override
@@ -69,8 +53,15 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
     protected abstract AbstractElasticsearchPublisher<T> buildElasticsearchPublisher() throws IOException;
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
+        if (!isStarted()) {
+            return;
+        }
+
         super.stop();
+        if (publisher != null) {
+            publisher.close();
+        }
     }
 
     @Override
@@ -98,6 +89,10 @@ public abstract class AbstractElasticsearchAppender<T> extends UnsynchronizedApp
 
     public void setReadTimeout(int readTimeout) {
         settings.setReadTimeout(readTimeout);
+    }
+
+    public void setShutdownTimeout(int shutdownTimeout) {
+        settings.setShutdownTimeout(shutdownTimeout);
     }
 
     public void setIncludeCallerData(boolean includeCallerData) {
