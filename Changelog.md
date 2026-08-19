@@ -1,3 +1,16 @@
+v.3.1.1
+* Verify builds and tests on JDK 11, 21, and 25 in CI.
+* Document the Java compatibility and CI test matrix.
+* Configure Mockito as a test-time Java agent for compatibility with current and future JDKs.
+* Replace the deprecated AWS SDK `Aws4Signer` with `AwsV4HttpSigner`.
+* Update the Maven compiler plugin and GitHub Actions used by the build.
+* Build the complete package, sources, and Javadoc artifacts in the JDK test matrix.
+* Handle HTTP 413 responses by splitting bulk requests at event boundaries.
+* Preserve successfully deliverable events instead of dropping the complete batch.
+* Drop only an individual event that is still rejected after isolation.
+* Keep unsent events buffered when a later split request fails.
+* Improved README and corrected project license metadata.
+
 v.3.1.0
 * Removed the appender-specific JVM shutdown hook. Appender shutdown is now managed through the standard Logback lifecycle.
 * Added the configurable `shutdownTimeout` option (30 seconds by default).

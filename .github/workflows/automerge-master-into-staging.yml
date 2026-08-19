@@ -13,7 +13,7 @@ jobs:
     
     steps:
     - name: "Checkout repository - branch - staging"
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: staging
         fetch-depth: "0"

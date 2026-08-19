@@ -102,6 +102,122 @@ public class ElasticsearchWriterHttpTest {
     }
 
     @Test
+    public void should_split_bulk_request_on_413_without_losing_events() throws Exception {
+        String event1 = "{\"index\":{}}\n{\"message\":\"event-1\"}\n";
+        String event2 = "{\"index\":{}}\n{\"message\":\"event-2\"}\n";
+        String event3 = "{\"index\":{}}\n{\"message\":\"event-3\"}\n";
+        String event4 = "{\"index\":{}}\n{\"message\":\"event-4\"}\n";
+
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(1)
+                .withRequestBody(containing("event-1"))
+                .withRequestBody(containing("event-4"))
+                .willReturn(aResponse().withStatus(413).withBody("payload too large")));
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(200).withBody("ok")));
+
+        Settings settings = settings();
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, event1 + event2 + event3 + event4);
+        writer.sendData();
+
+        assertFalse(writer.hasPendingData());
+        verify(3, postRequestedFor(urlEqualTo("/_bulk")));
+        verify(postRequestedFor(urlEqualTo("/_bulk")).withRequestBody(equalTo(event1 + event2)));
+        verify(postRequestedFor(urlEqualTo("/_bulk")).withRequestBody(equalTo(event3 + event4)));
+    }
+
+    @Test
+    public void should_split_mixed_delete_and_index_events_on_413() throws Exception {
+        String delete1 = "{\"delete\":{\"_index\":\"logs\",\"_id\":\"delete-1\"}}\n";
+        String index1 = "{\"index\":{}}\n{\"message\":\"index-1\"}\n";
+        String delete2 = "{\"delete\":{\"_index\":\"logs\",\"_id\":\"delete-2\"}}\n";
+        String index2 = "{\"index\":{}}\n{\"message\":\"index-2\"}\n";
+
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(1)
+                .withRequestBody(containing("delete-1"))
+                .withRequestBody(containing("index-2"))
+                .willReturn(aResponse().withStatus(413)));
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(200)));
+
+        Settings settings = settings();
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, delete1 + index1 + delete2 + index2);
+        writer.sendData();
+
+        assertFalse(writer.hasPendingData());
+        verify(3, postRequestedFor(urlEqualTo("/_bulk")));
+        verify(postRequestedFor(urlEqualTo("/_bulk")).withRequestBody(equalTo(delete1 + index1)));
+        verify(postRequestedFor(urlEqualTo("/_bulk")).withRequestBody(equalTo(delete2 + index2)));
+    }
+
+    @Test
+    public void should_drop_only_single_event_that_still_returns_413() throws Exception {
+        String oversizedEvent = "{\"index\":{}}\n{\"message\":\"oversized-event\"}\n";
+        String normalEvent = "{\"index\":{}}\n{\"message\":\"normal-event\"}\n";
+
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(1)
+                .withRequestBody(containing("oversized-event"))
+                .willReturn(aResponse().withStatus(413).withBody("payload too large")));
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(200).withBody("ok")));
+
+        Settings settings = settings();
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, oversizedEvent + normalEvent);
+        writer.sendData();
+
+        assertFalse(writer.hasPendingData());
+        verify(3, postRequestedFor(urlEqualTo("/_bulk")));
+        verify(postRequestedFor(urlEqualTo("/_bulk")).withRequestBody(equalTo(oversizedEvent)));
+        verify(postRequestedFor(urlEqualTo("/_bulk")).withRequestBody(equalTo(normalEvent)));
+    }
+
+    @Test
+    public void should_keep_unsent_events_in_buffer_when_later_split_request_fails() throws Exception {
+        String event1 = "{\"index\":{}}\n{\"message\":\"event-1\"}\n";
+        String event2 = "{\"index\":{}}\n{\"message\":\"event-2\"}\n";
+        String event3 = "{\"index\":{}}\n{\"message\":\"event-3\"}\n";
+        String event4 = "{\"index\":{}}\n{\"message\":\"event-4\"}\n";
+
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(1)
+                .withRequestBody(containing("event-1"))
+                .withRequestBody(containing("event-4"))
+                .willReturn(aResponse().withStatus(413)));
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(2)
+                .withRequestBody(containing("event-1"))
+                .withRequestBody(containing("event-2"))
+                .willReturn(aResponse().withStatus(200)));
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(2)
+                .withRequestBody(containing("event-3"))
+                .withRequestBody(containing("event-4"))
+                .willReturn(aResponse().withStatus(500).withBody("server error")));
+
+        Settings settings = settings();
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, event1 + event2 + event3 + event4);
+
+        try {
+            writer.sendData();
+            fail("Expected IOException on 500");
+        } catch (IOException e) {
+            assertTrue(e.getMessage().contains("500"));
+        }
+
+        assertTrue(writer.hasPendingData());
+        assertEquals(event3 + event4, writer.getSendBuffer().toString());
+    }
+
+    @Test
     public void should_reuse_client_across_two_sends() throws Exception {
         stubFor(post(urlEqualTo("/_bulk")).willReturn(aResponse().withStatus(200)));
 
