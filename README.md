@@ -90,15 +90,26 @@ The repository establishes the following compatibility baseline:
 
 | Component | Repository-backed status for 3.1.x |
 | --- | --- |
-| Java | Compiled with `--release 11`; Java 11 is the bytecode and CI baseline |
+| Java | Compiled with `--release 11`; the full test suite runs on JDK 11, 21, and 25 |
 | Logback Classic | Built and tested with `1.4.13`; dependency scope is `provided` |
 | Logback Access | Compiled against `1.4.13`; dependency scope is `provided` |
 | SLF4J | Compiled against `2.0.18`; dependency scope is `provided` |
 | Elasticsearch | Sends HTTP POST requests to the configured Bulk API URL; HTTP behavior is covered by WireMock tests, not a matrix of Elasticsearch server versions |
 | OpenSearch | Not documented or tested in this repository; no compatibility claim is made |
 
-Newer Java, Logback, SLF4J, Elasticsearch, or OpenSearch combinations may work,
-but they are not guaranteed by the current build and test configuration. If you
+### Java compatibility
+
+| Appender version | Minimum Java version | CI-tested JDKs |
+| --- | --- | --- |
+| `3.1.1` | Java 11 (`--release 11`) | 11, 21, 25 |
+
+Java 11 is the bytecode baseline, so version 3.1.1 is intended to run on Java 11
+and newer. JDK 11, 21, and 25 are explicitly verified by the complete CI test
+suite; intermediate and newer JDK releases are expected to work but are not
+separately verified.
+
+Newer Logback, SLF4J, Elasticsearch, or OpenSearch combinations may work, but
+they are not guaranteed by the current build and test configuration. If you
 depend on a specific combination, run the test suite and an integration test
 against that stack before deploying.
 
@@ -296,10 +307,11 @@ Logback substitutions or another secrets-injection mechanism.
 ### AWS Signature Version 4
 
 `com.agido.logback.elasticsearch.config.AWSAuthentication` signs requests using
-AWS SDK v2. The project declares `software.amazon.awssdk:auth` and
-`software.amazon.awssdk:regions` with `provided` scope, so applications using
-this authentication class must supply those modules. Credentials and region are
-resolved through the AWS SDK default provider chains.
+the AWS SDK v2 `AwsV4HttpSigner`. The project declares
+`software.amazon.awssdk:auth`, `software.amazon.awssdk:regions`, and
+`software.amazon.awssdk:http-auth-aws` with `provided` scope, so applications
+using this authentication class must supply those modules. Credentials and
+region are resolved through the AWS SDK default provider chains.
 
 ## Additional examples
 
@@ -398,7 +410,7 @@ Issues and pull requests are welcome. Before submitting a change:
 
 1. Base it on the repository's active development branch.
 2. Add or update tests for behavioral changes.
-3. Run `mvn test` with Java 11 or later.
+3. Run `mvn package` with Java 11 or later.
 4. Update `Changelog.md` when the change affects users.
 
 Use the [issue tracker](https://github.com/agido-malter/logback-elasticsearch-appender/issues)

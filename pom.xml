@@ -54,7 +54,8 @@
 	</developers>
 
 	<properties>
-		<maven.compiler.target>11</maven.compiler.target>
+		<maven.compiler.release>11</maven.compiler.release>
+		<mockito.version>5.23.0</mockito.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
@@ -111,6 +112,11 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>http-auth-aws</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>net.logstash.logback</groupId>
 			<artifactId>logstash-logback-encoder</artifactId>
 			<version>7.0.1</version>
@@ -124,11 +130,11 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.23.0</version>
+			<version>${mockito.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.github.tomakehurst</groupId>
+			<groupId>org.wiremock</groupId>
 			<artifactId>wiremock</artifactId>
 			<version>3.0.1</version>
 			<scope>test</scope>
@@ -141,9 +147,19 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.10.1</version>
+				<version>3.14.1</version>
 				<configuration>
-					<release>11</release>
+					<release>${maven.compiler.release}</release>
+				</configuration>
+			</plugin>
+
+			<!-- Test Runner -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.4</version>
+				<configuration>
+					<argLine>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
 				</configuration>
 			</plugin>
 
@@ -178,8 +194,7 @@
 					<!-- Only generate documentation for public API -->
 					<show>public</show>
 
-					<!-- Java 17+ -->
-					<source>${maven.compiler.source}</source>
+					<source>${maven.compiler.release}</source>
 				</configuration>
 
 				<executions>
