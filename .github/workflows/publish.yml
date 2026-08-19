@@ -1,0 +1,86 @@
+name: Publish to Maven Central
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maven-central-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish ${{ github.event.release.tag_name }}
+    runs-on: ubuntu-latest
+
+    container:
+      image: maven:3.9.16-eclipse-temurin-25-noble
+
+    environment:
+      name: maven-central
+      url: https://central.sonatype.com/publishing/deployments
+
+    steps:
+      - name: Release-Tag auschecken
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Java, Maven Central und GPG konfigurieren
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
+
+      - name: Release prüfen
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TARGET: ${{ github.event.release.target_commitish }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$RELEASE_TARGET" != "master" ]]; then
+            echo "Das Release muss auf master basieren, nicht auf $RELEASE_TARGET."
+            exit 1
+          fi
+
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Ungültiger Release-Tag: $RELEASE_TAG"
+            echo "Erwartetes Format: v3.1.1"
+            exit 1
+          fi
+
+          POM_VERSION="$(mvn -q help:evaluate \
+            -Dexpression=project.version \
+            -DforceStdout)"
+
+          if [[ "$POM_VERSION" == *-SNAPSHOT ]]; then
+            echo "SNAPSHOT-Versionen dürfen nicht veröffentlicht werden."
+            exit 1
+          fi
+
+          if [[ "v$POM_VERSION" != "$RELEASE_TAG" ]]; then
+            echo "Release-Tag:    $RELEASE_TAG"
+            echo "POM-Version:    $POM_VERSION"
+            exit 1
+          fi
+
+          mvn --version
+
+      - name: Tests ausführen und veröffentlichen
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: mvn -B clean deploy
