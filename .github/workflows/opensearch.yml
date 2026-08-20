@@ -1,0 +1,55 @@
+name: Test with OpenSearch
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "staging" ]
+  pull_request:
+    branches: [ "staging" ]
+
+jobs:
+  integration-test:
+    name: OpenSearch ${{ matrix.opensearch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        opensearch: [ "2.19.6", "3.7.0" ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: temurin
+          cache: maven
+
+      - name: Start OpenSearch ${{ matrix.opensearch }}
+        run: |
+          sudo sysctl -w vm.max_map_count=262144
+          docker run --detach --name opensearch \
+            --publish 127.0.0.1:9200:9200 \
+            --env discovery.type=single-node \
+            --env DISABLE_SECURITY_PLUGIN=true \
+            --env DISABLE_INSTALL_DEMO_CONFIG=true \
+            --env "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" \
+            opensearchproject/opensearch:${{ matrix.opensearch }}
+
+      - name: Wait for OpenSearch
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:9200/_cluster/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "OpenSearch did not become ready" >&2
+          docker logs opensearch
+          exit 1
+
+      - name: Run OpenSearch integration test
+        env:
+          OPENSEARCH_URL: http://localhost:9200
+        run: mvn -B -Dtest=OpenSearchIntegrationTest test

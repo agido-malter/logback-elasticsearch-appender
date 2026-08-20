@@ -6,11 +6,11 @@
 
 	<groupId>com.agido</groupId>
 	<artifactId>logback-elasticsearch-appender</artifactId>
-	<version>3.1.1</version>
+	<version>3.1.2</version>
 	<packaging>jar</packaging>
 
-	<name>Logback Elasticsearch Appender</name>
-	<description>Send log events directly from Logback to Elasticsearch</description>
+	<name>Logback Elasticsearch/OpenSearch Appender</name>
+	<description>Send Logback events asynchronously to Elasticsearch and OpenSearch</description>
 	<url>https://github.com/agido-malter/logback-elasticsearch-appender</url>
 
 	<licenses>
