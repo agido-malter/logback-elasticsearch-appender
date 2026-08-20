@@ -4,6 +4,8 @@ v.3.1.2
 * Make the AWS SigV4 service name configurable for Amazon OpenSearch Serverless (`aoss`), while retaining `es` as the default.
 * Inspect successful Bulk API responses for item-level failures.
 * Retain events rejected with HTTP 429 or 5xx for retry and drop only permanently rejected 4xx events.
+* Update the Maven Central publishing plugin and isolate signing and publishing in the `release` profile.
+* Declare directly used Logback, AWS SDK, and Hamcrest modules explicitly.
 
 v.3.1.1
 * Verify builds and tests on JDK 11, 21, and 25 in CI.
