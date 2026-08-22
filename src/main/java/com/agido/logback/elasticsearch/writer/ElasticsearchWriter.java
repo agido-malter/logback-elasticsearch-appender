@@ -6,6 +6,8 @@ import com.agido.logback.elasticsearch.config.HttpRequestHeader;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
 import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,6 +28,8 @@ import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
 public class ElasticsearchWriter implements SafeWriter {
+
+    private static final ObjectMapper RESPONSE_MAPPER = new ObjectMapper();
 
     private StringBuilder sendBuffer;
 
@@ -87,7 +91,7 @@ public class ElasticsearchWriter implements SafeWriter {
             int rc = response.statusCode();
 
             if (rc == 200) {
-                clearSendBufferAfterSuccess();
+                handleSuccessfulBulkResponse(response, data);
                 return;
             }
 
@@ -132,7 +136,7 @@ public class ElasticsearchWriter implements SafeWriter {
         int rc = response.statusCode();
 
         if (rc == 200) {
-            removeProcessedPrefix(data);
+            handleSuccessfulBulkResponse(response, data);
             return;
         }
 
@@ -154,6 +158,83 @@ public class ElasticsearchWriter implements SafeWriter {
         }
 
         handleFailedResponse(response);
+    }
+
+    /**
+     * A Bulk API request can return HTTP 200 while individual operations fail.
+     * Successful events and permanent item failures are removed from the queue;
+     * events rejected with 429 or 5xx remain queued for a later retry.
+     */
+    private void handleSuccessfulBulkResponse(HttpResponse<byte[]> response, String requestData) throws IOException {
+        String responseBody = new String(response.body(), StandardCharsets.UTF_8);
+        String trimmedBody = responseBody.trim();
+
+        // Preserve compatibility with proxies and test endpoints that return an
+        // empty or non-JSON success body instead of a Bulk API response.
+        if (trimmedBody.isEmpty() || !trimmedBody.startsWith("{")) {
+            replaceProcessedPrefix(requestData, "");
+            return;
+        }
+
+        final JsonNode root;
+        try {
+            root = RESPONSE_MAPPER.readTree(trimmedBody);
+        } catch (IOException e) {
+            throw new IOException("Could not parse successful Bulk API response", e);
+        }
+
+        if (!root.path("errors").asBoolean(false)) {
+            replaceProcessedPrefix(requestData, "");
+            return;
+        }
+
+        List<String> events = splitBulkEvents(requestData);
+        JsonNode items = root.path("items");
+        if (events.isEmpty() || !items.isArray() || items.size() != events.size()) {
+            throw new IOException("Bulk API reported item errors, but the response could not be "
+                    + "matched to the queued events");
+        }
+
+        StringBuilder retryableEvents = new StringBuilder();
+        int permanentFailures = 0;
+        int retryableFailures = 0;
+
+        for (int i = 0; i < events.size(); i++) {
+            JsonNode item = items.get(i);
+            JsonNode operationResult = firstOperationResult(item);
+            int status = operationResult.path("status").asInt(-1);
+
+            if (status >= 200 && status < 300) {
+                continue;
+            }
+
+            if (status == 429 || status >= 500) {
+                retryableEvents.append(events.get(i));
+                retryableFailures++;
+            } else if (status >= 400 && status < 500) {
+                permanentFailures++;
+                errorReporter.logWarning("Dropping one log event because the Elasticsearch/OpenSearch "
+                        + "Bulk API rejected it with HTTP " + status + ": "
+                        + operationResult.path("error"));
+            } else {
+                throw new IOException("Bulk API item response contained an invalid status: " + status);
+            }
+        }
+
+        replaceProcessedPrefix(requestData, retryableEvents.toString());
+
+        if (retryableFailures > 0) {
+            throw new IOException("Bulk API partially failed: " + retryableFailures
+                    + " event(s) retained for retry and " + permanentFailures
+                    + " permanent failure(s) dropped");
+        }
+    }
+
+    private static JsonNode firstOperationResult(JsonNode item) throws IOException {
+        if (item == null || !item.isObject() || item.size() != 1) {
+            throw new IOException("Bulk API item response has an unexpected structure");
+        }
+        return item.elements().next();
     }
 
     private HttpResponse<byte[]> sendRequest(URI sendUri, String userInfo, String data) throws IOException {
@@ -282,10 +363,18 @@ public class ElasticsearchWriter implements SafeWriter {
 
     /** Removes data already sent successfully or intentionally dropped. */
     private void removeProcessedPrefix(String data) throws IOException {
+        replaceProcessedPrefix(data, "");
+    }
+
+    private void replaceProcessedPrefix(String data, String replacement) throws IOException {
         if (!startsWith(sendBuffer, data)) {
             throw new IOException("Internal send buffer mismatch while removing processed bulk events");
         }
         sendBuffer.delete(0, data.length());
+        if (!replacement.isEmpty()) {
+            sendBuffer.insert(0, replacement);
+        }
+        resetBufferExceededWhenEmpty();
     }
 
     private static boolean startsWith(StringBuilder value, String prefix) {
@@ -298,11 +387,6 @@ public class ElasticsearchWriter implements SafeWriter {
             }
         }
         return true;
-    }
-
-    private void clearSendBufferAfterSuccess() {
-        sendBuffer.setLength(0);
-        resetBufferExceededWhenEmpty();
     }
 
     private void resetBufferExceededWhenEmpty() {

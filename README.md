@@ -1,10 +1,11 @@
-# Logback Elasticsearch Appender
+# Logback Elasticsearch / OpenSearch Appender
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.agido/logback-elasticsearch-appender.svg)](https://central.sonatype.com/artifact/com.agido/logback-elasticsearch-appender)
 [![Test with Maven](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml/badge.svg)](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml)
+[![Test with OpenSearch](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/opensearch.yml/badge.svg)](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/opensearch.yml)
 [![License: EPL-1.0 or LGPL-2.1](https://img.shields.io/badge/license-EPL--1.0%20or%20LGPL--2.1-blue.svg)](LICENSE.txt)
 
-Send Logback events asynchronously to the Elasticsearch Bulk API.
+Send Logback events asynchronously to the Elasticsearch and OpenSearch Bulk APIs.
 
 This project is the **actively maintained successor to
 [`internetitem/logback-elasticsearch-appender`](https://github.com/internetitem/logback-elasticsearch-appender)**,
@@ -13,29 +14,28 @@ dependency and security updates, Java 11 support, Logback 1.4 build coverage, an
 additional configuration options.
 
 > [!NOTE]
-> This README deliberately does not claim compatibility with untested Elasticsearch
-> versions or OpenSearch. See [Compatibility](#compatibility) for the exact guarantees
-> that can be derived from this repository.
+> Compatibility claims are limited to the versions and test scope documented in
+> [Compatibility](#compatibility).
 
 ## Quick start
 
 ### 1. Add the dependency
 
-The current project version is `3.1.1`, as declared in `pom.xml` and
+The current project version is `3.1.2`, as declared in `pom.xml` and
 `Changelog.md`.
 
 ```xml
 <dependency>
     <groupId>com.agido</groupId>
     <artifactId>logback-elasticsearch-appender</artifactId>
-    <version>3.1.1</version>
+    <version>3.1.2</version>
 </dependency>
 ```
 
 Gradle:
 
 ```groovy
-implementation "com.agido:logback-elasticsearch-appender:3.1.1"
+implementation "com.agido:logback-elasticsearch-appender:3.1.2"
 ```
 
 Logback, Logback Access, SLF4J, and the AWS SDK modules are declared with
@@ -95,15 +95,15 @@ The repository establishes the following compatibility baseline:
 | Logback Access | Compiled against `1.4.13`; dependency scope is `provided` |
 | SLF4J | Compiled against `2.0.18`; dependency scope is `provided` |
 | Elasticsearch | Sends HTTP POST requests to the configured Bulk API URL; HTTP behavior is covered by WireMock tests, not a matrix of Elasticsearch server versions |
-| OpenSearch | Not documented or tested in this repository; no compatibility claim is made |
+| OpenSearch | End-to-end Bulk API integration tests run against OpenSearch 2.19.6 and 3.7.0 without the Security plugin |
 
 ### Java compatibility
 
 | Appender version | Minimum Java version | CI-tested JDKs |
 | --- | --- | --- |
-| `3.1.1` | Java 11 (`--release 11`) | 11, 21, 25 |
+| `3.1.2` | Java 11 (`--release 11`) | 11, 21, 25 |
 
-Java 11 is the bytecode baseline, so version 3.1.1 is intended to run on Java 11
+Java 11 is the bytecode baseline, so version 3.1.2 is intended to run on Java 11
 and newer. JDK 11, 21, and 25 are explicitly verified by the complete CI test
 suite; intermediate and newer JDK releases are expected to work but are not
 separately verified.
@@ -119,7 +119,7 @@ This project is a maintained continuation, but it is **not documented as a
 drop-in replacement**. Migrate explicitly:
 
 1. Replace the dependency coordinates with
-   `com.agido:logback-elasticsearch-appender:3.1.1`.
+   `com.agido:logback-elasticsearch-appender:3.1.2`.
 2. Change appender class names from `com.internetitem.logback.elasticsearch.*`
    to `com.agido.logback.elasticsearch.*`.
 3. In XML configuration, prefer `<esProperty>` inside `<properties>`. The
@@ -176,7 +176,7 @@ wait indefinitely.
 ## Configuration
 
 The following example shows the available settings. Only `url` and `index` are
-required for Elasticsearch delivery.
+required for Elasticsearch or OpenSearch delivery.
 
 ```xml
 <appender name="ELASTIC"
@@ -228,11 +228,12 @@ required for Elasticsearch delivery.
 
 ### Configuration reference
 
-- `url` (required): Elasticsearch Bulk API endpoint.
+- `url` (required): Elasticsearch or OpenSearch Bulk API endpoint.
 - `index` (required): Target index. Supports Logback `PatternLayout` conversion
   words, for example `logs-%date{yyyy-MM-dd}`.
-- `type` (optional): Adds `_type` to each bulk action. Only configure this when
-  required by your Elasticsearch API and mapping.
+- `type` (optional): Adds `_type` to each bulk action. Leave this unset for
+  current Elasticsearch and OpenSearch versions; configure it only for a legacy
+  API and mapping that still require document types.
 - `sleepTime` (default `250` ms, minimum `100`): Delay when the event queue is
   empty. The queue is drained before sleeping.
 - `maxBatchSize` (default `-1`): Maximum events per batch. A positive number
@@ -313,6 +314,16 @@ the AWS SDK v2 `AwsV4HttpSigner`. The project declares
 using this authentication class must supply those modules. Credentials and
 region are resolved through the AWS SDK default provider chains.
 
+The default SigV4 service name is `es`, which is correct for provisioned Amazon
+OpenSearch Service domains. OpenSearch Serverless collections require `aoss`:
+
+```xml
+<authentication
+        class="com.agido.logback.elasticsearch.config.AWSAuthentication">
+    <serviceName>aoss</serviceName>
+</authentication>
+```
+
 ## Additional examples
 
 ### MDC and fluent key-value pairs
@@ -372,23 +383,27 @@ root(INFO, ["ELASTIC"])
 ## Delivery behavior and operational limits
 
 Delivery happens on a worker thread rather than the application's calling
-thread. This keeps logging calls from waiting on Elasticsearch, but it is not a
-durable queue:
+thread. This keeps logging calls from waiting on Elasticsearch or OpenSearch,
+but it is not a durable queue:
 
-- Logs can be lost when Elasticsearch is unavailable and the bounded send buffer
-  fills.
+- Logs can be lost when the target cluster is unavailable and the bounded send
+  buffer fills.
 - Pending logs can remain unsent when retries are exhausted or shutdown reaches
   `shutdownTimeout`.
 - HTTP `413 Payload Too Large` responses cause the bulk request to be split
   recursively at event boundaries. Only an event that is still rejected after
   isolation is dropped.
+- A Bulk API response can have HTTP `200` and still contain item-level errors.
+  Successful events are removed, events rejected with `429` or `5xx` remain
+  buffered for retry, and permanently rejected `4xx` events are dropped with a
+  warning.
 - Other HTTP `4xx` responses clear the current send buffer. Other failures are
   retried according to `maxRetries`.
 - The appender uses the configured Bulk API URL directly. It does not discover
   cluster nodes or manage index templates and mappings.
 
 For workloads that require durable, guaranteed delivery, use an external log
-shipper or queue between the application and Elasticsearch.
+shipper or queue between the application and Elasticsearch or OpenSearch.
 
 ## Project status
 
@@ -400,9 +415,10 @@ security updates, HTTP client improvements, Logback 1.3 configuration support,
 SLF4J fluent key-value pairs, and AWS SDK v2 signing. See
 [`Changelog.md`](Changelog.md) for the release history.
 
-The Maven build runs unit and HTTP-level tests, and the repository contains
-GitHub Actions workflows for Maven tests and CodeQL analysis. There is currently
-no Elasticsearch server-version integration-test matrix.
+The Maven build runs unit and HTTP-level tests. GitHub Actions additionally runs
+end-to-end Bulk API integration tests against OpenSearch 2.19.6 and 3.7.0. The
+repository does not currently run an Elasticsearch server-version integration
+matrix.
 
 ## Contributing
 

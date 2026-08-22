@@ -81,6 +81,76 @@ public class ElasticsearchWriterHttpTest {
     }
 
     @Test
+    public void should_keep_only_retryable_events_after_partial_bulk_failure() throws Exception {
+        String event1 = "{\"index\":{}}\n{\"message\":\"success\"}\n";
+        String event2 = "{\"index\":{}}\n{\"message\":\"retry\"}\n";
+        String event3 = "{\"index\":{}}\n{\"message\":\"invalid\"}\n";
+        String response = "{\"errors\":true,\"items\":["
+                + "{\"index\":{\"status\":201}},"
+                + "{\"index\":{\"status\":429,\"error\":{\"type\":\"rejected\"}}},"
+                + "{\"index\":{\"status\":400,\"error\":{\"type\":\"mapper_error\"}}}]}";
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(1)
+                .withRequestBody(containing("success"))
+                .withRequestBody(containing("invalid"))
+                .willReturn(aResponse().withStatus(200).withBody(response)));
+        stubFor(post(urlEqualTo("/_bulk"))
+                .atPriority(10)
+                .willReturn(aResponse().withStatus(200).withBody("{\"errors\":false,\"items\":[]}")));
+
+        Settings settings = settings();
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, event1 + event2 + event3);
+
+        try {
+            writer.sendData();
+            fail("Expected IOException for retryable Bulk API item failure");
+        } catch (IOException e) {
+            assertTrue(e.getMessage().contains("retained for retry"));
+        }
+
+        assertEquals(event2, writer.getSendBuffer().toString());
+
+        writer.sendData();
+
+        assertFalse(writer.hasPendingData());
+        verify(2, postRequestedFor(urlEqualTo("/_bulk")));
+        verify(postRequestedFor(urlEqualTo("/_bulk")).withRequestBody(equalTo(event2)));
+    }
+
+    @Test
+    public void should_drop_permanent_item_failure_without_retrying_successful_events() throws Exception {
+        String event1 = "{\"create\":{}}\n{\"message\":\"success\"}\n";
+        String event2 = "{\"create\":{}}\n{\"message\":\"invalid\"}\n";
+        String response = "{\"errors\":true,\"items\":["
+                + "{\"create\":{\"status\":201}},"
+                + "{\"create\":{\"status\":400,\"error\":{\"type\":\"mapper_error\"}}}]}";
+        stubFor(post(urlEqualTo("/_bulk")).willReturn(aResponse().withStatus(200).withBody(response)));
+
+        Settings settings = settings();
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, event1 + event2);
+        writer.sendData();
+
+        assertFalse(writer.hasPendingData());
+    }
+
+    @Test
+    public void should_preserve_buffer_when_bulk_error_response_cannot_be_correlated() throws Exception {
+        String events = "{\"index\":{}}\n{\"message\":\"one\"}\n"
+                + "{\"index\":{}}\n{\"message\":\"two\"}\n";
+        String response = "{\"errors\":true,\"items\":[{\"index\":{\"status\":429}}]}";
+        stubFor(post(urlEqualTo("/_bulk")).willReturn(aResponse().withStatus(200).withBody(response)));
+
+        Settings settings = settings();
+        ElasticsearchWriter writer = new ElasticsearchWriter(errorReporter(settings), settings, headers(null, null));
+        write(writer, events);
+
+        assertThrows(IOException.class, writer::sendData);
+        assertEquals(events, writer.getSendBuffer().toString());
+    }
+
+    @Test
     public void should_throw_and_clear_buffer_on_400() throws Exception {
         stubFor(post(urlEqualTo("/_bulk")).willReturn(aResponse().withStatus(400).withBody("bad request")));
 
