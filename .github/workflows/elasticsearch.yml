@@ -1,0 +1,56 @@
+name: Test with Elasticsearch
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "staging" ]
+  pull_request:
+    branches: [ "staging" ]
+
+jobs:
+  integration-test:
+    name: Elasticsearch ${{ matrix.elasticsearch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        elasticsearch: [ "8.19.20", "9.5.1" ]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: "25"
+          distribution: temurin
+          cache: maven
+
+      - name: Start Elasticsearch ${{ matrix.elasticsearch }}
+        run: |
+          sudo sysctl -w vm.max_map_count=262144
+          docker run --detach --name elasticsearch \
+            --publish 127.0.0.1:9200:9200 \
+            --env discovery.type=single-node \
+            --env xpack.security.enabled=false \
+            --env xpack.security.enrollment.enabled=false \
+            --env "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
+            docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.elasticsearch }}
+
+      - name: Wait for Elasticsearch
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:9200/_cluster/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Elasticsearch did not become ready" >&2
+          docker logs elasticsearch
+          exit 1
+
+      - name: Run Elasticsearch integration test
+        env:
+          SEARCH_ENGINE_URL: http://localhost:9200
+          SEARCH_ENGINE_NAME: Elasticsearch
+        run: mvn -B -Dtest=BulkApiIntegrationTest test
