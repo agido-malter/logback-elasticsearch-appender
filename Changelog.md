@@ -1,4 +1,5 @@
 v.3.1.2
+* Add reproducible Elasticsearch integration tests for Elasticsearch 8.19.20 and 9.5.1.
 * Add reproducible OpenSearch integration tests for OpenSearch 2.19.6 and 3.7.0.
 * Document OpenSearch support and the tested compatibility matrix.
 * Make the AWS SigV4 service name configurable for Amazon OpenSearch Serverless (`aoss`), while retaining `es` as the default.

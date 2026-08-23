@@ -2,6 +2,7 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.agido/logback-elasticsearch-appender.svg)](https://central.sonatype.com/artifact/com.agido/logback-elasticsearch-appender)
 [![Test with Maven](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml/badge.svg)](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml)
+[![Test with Elasticsearch](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/elasticsearch.yml/badge.svg)](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/elasticsearch.yml)
 [![Test with OpenSearch](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/opensearch.yml/badge.svg)](https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/opensearch.yml)
 [![License: EPL-1.0 or LGPL-2.1](https://img.shields.io/badge/license-EPL--1.0%20or%20LGPL--2.1-blue.svg)](LICENSE.txt)
 
@@ -94,7 +95,7 @@ The repository establishes the following compatibility baseline:
 | Logback Classic | Built and tested with `1.4.13`; dependency scope is `provided` |
 | Logback Access | Compiled against `1.4.13`; dependency scope is `provided` |
 | SLF4J | Compiled against `2.0.18`; dependency scope is `provided` |
-| Elasticsearch | Sends HTTP POST requests to the configured Bulk API URL; HTTP behavior is covered by WireMock tests, not a matrix of Elasticsearch server versions |
+| Elasticsearch | End-to-end Bulk API integration tests run against Elasticsearch 8.19.20 and 9.5.1 with security disabled |
 | OpenSearch | End-to-end Bulk API integration tests run against OpenSearch 2.19.6 and 3.7.0 without the Security plugin |
 
 ### Java compatibility
@@ -416,9 +417,8 @@ SLF4J fluent key-value pairs, and AWS SDK v2 signing. See
 [`Changelog.md`](Changelog.md) for the release history.
 
 The Maven build runs unit and HTTP-level tests. GitHub Actions additionally runs
-end-to-end Bulk API integration tests against OpenSearch 2.19.6 and 3.7.0. The
-repository does not currently run an Elasticsearch server-version integration
-matrix.
+end-to-end Bulk API integration tests against Elasticsearch 8.19.20 and 9.5.1
+and OpenSearch 2.19.6 and 3.7.0.
 
 ## Contributing
 
