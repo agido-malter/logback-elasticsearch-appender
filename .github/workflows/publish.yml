@@ -87,7 +87,8 @@ jobs:
             exit 1
           fi
 
-          if ! git merge-base --is-ancestor HEAD origin/master; then
+          if ! git -c safe.directory="$GITHUB_WORKSPACE" \
+            merge-base --is-ancestor HEAD origin/master; then
             echo "Der Release-Tag $RELEASE_TAG zeigt nicht auf einen Commit aus master."
             exit 1
           fi
