@@ -46,6 +46,7 @@ jobs:
           server-id: central
           server-username: CENTRAL_USERNAME
           server-password: CENTRAL_PASSWORD
+          settings-path: ${{ github.workspace }}/.m2
 
       - name: Release prüfen
         shell: bash
@@ -93,6 +94,12 @@ jobs:
             exit 1
           fi
 
+          SETTINGS_FILE="$GITHUB_WORKSPACE/.m2/settings.xml"
+          if [[ ! -f "$SETTINGS_FILE" ]] || ! grep -q '<id>central</id>' "$SETTINGS_FILE"; then
+            echo "Maven settings.xml enthält keinen Server mit der ID central."
+            exit 1
+          fi
+
           mvn --version
 
       - name: Tests ausführen und veröffentlichen
@@ -101,4 +108,9 @@ jobs:
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: mvn -B -Prelease -Dgpg.signer=bc clean deploy
+        run: >-
+          mvn -B
+          --settings "$GITHUB_WORKSPACE/.m2/settings.xml"
+          -Prelease
+          -Dgpg.signer=bc
+          clean deploy
