@@ -1,4 +1,4 @@
-name: Test with OpenSearch
+name: Test with Elasticsearch
 
 on:
   workflow_dispatch:
@@ -9,12 +9,12 @@ on:
 
 jobs:
   integration-test:
-    name: OpenSearch ${{ matrix.opensearch }}
+    name: Elasticsearch ${{ matrix.elasticsearch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        opensearch: [ "2.19.6", "3.7.0" ]
+        elasticsearch: [ "8.19.20", "9.5.1" ]
 
     steps:
       - uses: actions/checkout@v6
@@ -26,18 +26,18 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Start OpenSearch ${{ matrix.opensearch }}
+      - name: Start Elasticsearch ${{ matrix.elasticsearch }}
         run: |
           sudo sysctl -w vm.max_map_count=262144
-          docker run --detach --name opensearch \
+          docker run --detach --name elasticsearch \
             --publish 127.0.0.1:9200:9200 \
             --env discovery.type=single-node \
-            --env DISABLE_SECURITY_PLUGIN=true \
-            --env DISABLE_INSTALL_DEMO_CONFIG=true \
-            --env "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" \
-            opensearchproject/opensearch:${{ matrix.opensearch }}
+            --env xpack.security.enabled=false \
+            --env xpack.security.enrollment.enabled=false \
+            --env "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
+            docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.elasticsearch }}
 
-      - name: Wait for OpenSearch
+      - name: Wait for Elasticsearch
         run: |
           for attempt in {1..60}; do
             if curl --fail --silent http://localhost:9200/_cluster/health; then
@@ -45,12 +45,12 @@ jobs:
             fi
             sleep 2
           done
-          echo "OpenSearch did not become ready" >&2
-          docker logs opensearch
+          echo "Elasticsearch did not become ready" >&2
+          docker logs elasticsearch
           exit 1
 
-      - name: Run OpenSearch integration test
+      - name: Run Elasticsearch integration test
         env:
           SEARCH_ENGINE_URL: http://localhost:9200
-          SEARCH_ENGINE_NAME: OpenSearch
+          SEARCH_ENGINE_NAME: Elasticsearch
         run: mvn -B -Dtest=BulkApiIntegrationTest test

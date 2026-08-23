@@ -18,20 +18,26 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * End-to-end test enabled by the OpenSearch GitHub Actions workflow. It is
- * skipped during normal unit-test runs when OPENSEARCH_URL is not set.
+ * End-to-end test enabled by the Elasticsearch and OpenSearch GitHub Actions
+ * workflows. It is skipped during normal unit-test runs when
+ * SEARCH_ENGINE_URL is not set.
  */
-public class OpenSearchIntegrationTest {
+public class BulkApiIntegrationTest {
 
     @Test
-    public void should_send_log_event_to_opensearch_bulk_api() throws Exception {
-        String configuredUrl = System.getenv("OPENSEARCH_URL");
-        Assume.assumeTrue("OPENSEARCH_URL is required for this integration test",
+    public void should_send_log_event_through_bulk_api() throws Exception {
+        String configuredUrl = System.getenv("SEARCH_ENGINE_URL");
+        Assume.assumeTrue("SEARCH_ENGINE_URL is required for this integration test",
                 configuredUrl != null && !configuredUrl.trim().isEmpty());
 
+        String engineName = System.getenv("SEARCH_ENGINE_NAME");
+        if (engineName == null || engineName.trim().isEmpty()) {
+            engineName = "search engine";
+        }
+
         String baseUrl = stripTrailingSlash(configuredUrl.trim());
-        String index = "logback-opensearch-it-" + UUID.randomUUID().toString().replace("-", "");
-        String marker = "opensearch-integration-" + UUID.randomUUID();
+        String index = "logback-bulk-api-it-" + UUID.randomUUID().toString().replace("-", "");
+        String marker = "bulk-api-integration-" + UUID.randomUUID();
         HttpClient client = HttpClient.newHttpClient();
         LoggerContext context = new LoggerContext();
         context.setMDCAdapter(new LogbackMDCAdapter());
@@ -40,7 +46,7 @@ public class OpenSearchIntegrationTest {
         ElasticsearchAppender appender = new ElasticsearchAppender();
         try {
             appender.setContext(context);
-            appender.setName("OPENSEARCH_INTEGRATION");
+            appender.setName("BULK_API_INTEGRATION");
             appender.setUrl(baseUrl + "/_bulk?refresh=wait_for");
             appender.setIndex(index);
             appender.setOperation("index");
@@ -50,9 +56,9 @@ public class OpenSearchIntegrationTest {
             appender.setErrorsToStderr(true);
             appender.start();
 
-            Logger logger = context.getLogger("opensearch-integration-test");
+            Logger logger = context.getLogger("bulk-api-integration-test");
             LoggingEvent event = new LoggingEvent(
-                    OpenSearchIntegrationTest.class.getName(),
+                    BulkApiIntegrationTest.class.getName(),
                     logger,
                     Level.INFO,
                     marker,
@@ -63,7 +69,7 @@ public class OpenSearchIntegrationTest {
             HttpResponse<String> response = waitForMarker(client, baseUrl, index, marker);
 
             assertEquals(response.body(), 200, response.statusCode());
-            assertTrue("OpenSearch response did not contain marker " + marker + ": " + response.body(),
+            assertTrue(engineName + " response did not contain marker " + marker + ": " + response.body(),
                     response.body().contains(marker));
         } finally {
             appender.stop();
