@@ -17,7 +17,7 @@ jobs:
         opensearch: [ "2.19.6", "3.7.0" ]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 25
         uses: actions/setup-java@v5
