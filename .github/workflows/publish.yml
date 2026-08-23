@@ -3,6 +3,12 @@ name: Publish to Maven Central
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to publish (for example v3.1.2)
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -13,7 +19,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Publish ${{ github.event.release.tag_name }}
+    name: Publish ${{ github.event.release.tag_name || inputs.release_tag }}
     runs-on: ubuntu-latest
 
     container:
@@ -27,10 +33,11 @@ jobs:
       - name: Release-Tag auschecken
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event.release.tag_name || inputs.release_tag }}
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Java, Maven Central und GPG konfigurieren
+      - name: Java und Maven Central konfigurieren
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -39,18 +46,23 @@ jobs:
           server-id: central
           server-username: CENTRAL_USERNAME
           server-password: CENTRAL_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Release prüfen
         shell: bash
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
           RELEASE_TARGET: ${{ github.event.release.target_commitish }}
+          WORKFLOW_REF: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
-          if [[ "$RELEASE_TARGET" != "master" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "release" && "$RELEASE_TARGET" != "master" ]]; then
             echo "Das Release muss auf master basieren, nicht auf $RELEASE_TARGET."
+            exit 1
+          fi
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$WORKFLOW_REF" != "master" ]]; then
+            echo "Das manuelle Publishing muss vom master-Branch gestartet werden, nicht von $WORKFLOW_REF."
             exit 1
           fi
 
@@ -75,11 +87,17 @@ jobs:
             exit 1
           fi
 
+          if ! git merge-base --is-ancestor HEAD origin/master; then
+            echo "Der Release-Tag $RELEASE_TAG zeigt nicht auf einen Commit aus master."
+            exit 1
+          fi
+
           mvn --version
 
       - name: Tests ausführen und veröffentlichen
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: mvn -B -Prelease clean deploy
+        run: mvn -B -Prelease -Dgpg.signer=bc clean deploy
