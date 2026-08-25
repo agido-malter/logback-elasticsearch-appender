@@ -22,21 +22,21 @@ additional configuration options.
 
 ### 1. Add the dependency
 
-The current project version is `3.1.2`, as declared in `pom.xml` and
+The current project version is `3.1.3`, as declared in `pom.xml` and
 `Changelog.md`.
 
 ```xml
 <dependency>
     <groupId>com.agido</groupId>
     <artifactId>logback-elasticsearch-appender</artifactId>
-    <version>3.1.2</version>
+    <version>3.1.3</version>
 </dependency>
 ```
 
 Gradle:
 
 ```groovy
-implementation "com.agido:logback-elasticsearch-appender:3.1.2"
+implementation "com.agido:logback-elasticsearch-appender:3.1.3"
 ```
 
 Logback, Logback Access, SLF4J, and the AWS SDK modules are declared with
@@ -92,8 +92,8 @@ The repository establishes the following compatibility baseline:
 | Component | Repository-backed status for 3.1.x |
 | --- | --- |
 | Java | Compiled with `--release 11`; the full test suite runs on JDK 11, 21, and 25 |
-| Logback Classic | Built and tested with `1.4.13`; dependency scope is `provided` |
-| Logback Access | Compiled against `1.4.13`; dependency scope is `provided` |
+| Logback Classic | Built and tested with `1.4.14`; dependency scope is `provided` |
+| Logback Access | Compiled against `1.4.14`; dependency scope is `provided` |
 | SLF4J | Compiled against `2.0.18`; dependency scope is `provided` |
 | Elasticsearch | End-to-end Bulk API integration tests run against Elasticsearch 8.19.20 and 9.5.1 with security disabled |
 | OpenSearch | End-to-end Bulk API integration tests run against OpenSearch 2.19.6 and 3.7.0 without the Security plugin |
@@ -102,9 +102,10 @@ The repository establishes the following compatibility baseline:
 
 | Appender version | Minimum Java version | CI-tested JDKs |
 | --- | --- | --- |
+| `3.1.3` | Java 11 (`--release 11`) | 11, 21, 25 |
 | `3.1.2` | Java 11 (`--release 11`) | 11, 21, 25 |
 
-Java 11 is the bytecode baseline, so version 3.1.2 is intended to run on Java 11
+Java 11 is the bytecode baseline, so version 3.1.3 is intended to run on Java 11
 and newer. JDK 11, 21, and 25 are explicitly verified by the complete CI test
 suite; intermediate and newer JDK releases are expected to work but are not
 separately verified.
@@ -120,7 +121,7 @@ This project is a maintained continuation, but it is **not documented as a
 drop-in replacement**. Migrate explicitly:
 
 1. Replace the dependency coordinates with
-   `com.agido:logback-elasticsearch-appender:3.1.2`.
+   `com.agido:logback-elasticsearch-appender:3.1.3`.
 2. Change appender class names from `com.internetitem.logback.elasticsearch.*`
    to `com.agido.logback.elasticsearch.*`.
 3. In XML configuration, prefer `<esProperty>` inside `<properties>`. The
