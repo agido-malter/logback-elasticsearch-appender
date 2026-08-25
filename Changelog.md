@@ -1,3 +1,9 @@
+v.3.1.3
+* Update Jackson Core and Databind to 2.22.2 in response to vulnerability checks.
+* Update the test dependencies Hamcrest to 3.0 and WireMock to 3.13.2.
+* Update the Maven Compiler, Surefire, Source, and Javadoc plugins.
+* No functional changes.
+
 v.3.1.2
 * Add reproducible Elasticsearch integration tests for Elasticsearch 8.19.20 and 9.5.1.
 * Add reproducible OpenSearch integration tests for OpenSearch 2.19.6 and 3.7.0.
