@@ -1,6 +1,6 @@
 package com.agido.logback.elasticsearch;
 
-import ch.qos.logback.access.spi.IAccessEvent;
+import ch.qos.logback.access.common.spi.IAccessEvent;
 import ch.qos.logback.core.Context;
 import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
@@ -9,7 +9,7 @@ import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.AbstractPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.AccessPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
-import com.fasterxml.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 
@@ -26,6 +26,6 @@ public class AccessElasticsearchPublisher extends AbstractElasticsearchPublisher
 
     @Override
     protected void serializeCommonFields(JsonGenerator gen, IAccessEvent event) throws IOException {
-        gen.writeObjectField("@timestamp", getTimestamp(event.getTimeStamp()));
+        writeValueProperty(gen, "@timestamp", getTimestamp(event.getTimeStamp()));
     }
 }

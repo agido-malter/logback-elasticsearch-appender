@@ -1,3 +1,15 @@
+v.4.0.0
+* Raise the minimum Java version from 11 to 17 and test the full build on JDK 17, 21, and 25.
+* Upgrade Logback Classic and Core to 1.6.3 and SLF4J to 2.0.18.
+* Migrate Logback Access to `ch.qos.logback.access:logback-access-common:2.0.15` and its new package names.
+* Migrate from Jackson 2 to Jackson 3.2.2 and its `tools.jackson` package namespace.
+* Upgrade Logstash Logback Encoder to 9.0 and adapt structured-argument serialization.
+* Upgrade the AWS SDK for Java to 2.54.4.
+* Upgrade Maven GPG Plugin to 3.2.8 and current GitHub Actions versions.
+* Add regression tests for Logback Access events and structured arguments.
+* Keep Elasticsearch 8/9 and OpenSearch 2/3 Bulk API integration coverage.
+* Version 3.1.x remains the final line supporting Java 11.
+
 v.3.1.3
 * Update Jackson Core and Databind to 2.22.2 in response to vulnerability checks.
 * Update the test dependencies Hamcrest to 3.0 and WireMock to 3.13.2.

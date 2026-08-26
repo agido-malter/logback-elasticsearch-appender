@@ -6,16 +6,16 @@ import com.agido.logback.elasticsearch.config.ElasticsearchProperties;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
 import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
-import com.fasterxml.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonGenerator;
 import net.logstash.logback.marker.ObjectAppendingMarker;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 
 public class StructuredArgsElasticsearchPublisher extends ClassicElasticsearchPublisher {
-    private String keyPrefix;
-    private Field field;
-    private ErrorReporter errorReporter;
+    private final String keyPrefix;
+    private final Field fieldValue;
+    private final ErrorReporter errorReporter;
 
     public StructuredArgsElasticsearchPublisher(Context context, ErrorReporter errorReporter, Settings settings, ElasticsearchProperties properties,
                                                 HttpRequestHeaders headers) throws IOException {
@@ -23,18 +23,21 @@ public class StructuredArgsElasticsearchPublisher extends ClassicElasticsearchPu
 
         this.errorReporter = errorReporter;
 
-        keyPrefix = "";
+        String configuredKeyPrefix = "";
         if (settings != null && settings.getKeyPrefix() != null) {
-            keyPrefix = settings.getKeyPrefix();
+            configuredKeyPrefix = settings.getKeyPrefix();
         }
+        this.keyPrefix = configuredKeyPrefix;
 
+        Field resolvedField = null;
         try {
-            field = ObjectAppendingMarker.class.getDeclaredField("object");
-            field.setAccessible(true);
+            resolvedField = ObjectAppendingMarker.class.getDeclaredField("fieldValue");
+            resolvedField.setAccessible(true);
         } catch (NoSuchFieldException e) {
             // message will be logged without object
             errorReporter.logError("error in logging with object serialization", e);
         }
+        this.fieldValue = resolvedField;
     }
 
     protected void serializeCommonFields(JsonGenerator gen, ILoggingEvent event) throws IOException {
@@ -45,21 +48,21 @@ public class StructuredArgsElasticsearchPublisher extends ClassicElasticsearchPu
             for (Object eventArg : eventArgs) {
                 if (eventArg instanceof ObjectAppendingMarker) {
                     ObjectAppendingMarker marker = (ObjectAppendingMarker) eventArg;
-                    if (field != null && settings != null && settings.isObjectSerialization() &&
-                            marker.getFieldValue().toString().contains("@")) {
-                        try {
-                            Object obj = field.get(marker);
-                            if (obj != null) {
-                                gen.writeObjectField(keyPrefix + marker.getFieldName(), obj);
-                            }
-                        } catch (IllegalAccessException e) {
-                            // message will be logged without object
-                            errorReporter.logError("error in logging with object serialization", e);
-                        }
-                    } else
-                        gen.writeObjectField(keyPrefix + marker.getFieldName(), marker.getFieldValue());
+                    writeMarker(gen, marker);
                 }
             }
+        }
+    }
+
+    private void writeMarker(JsonGenerator gen, ObjectAppendingMarker marker) throws IOException {
+        if (fieldValue == null) {
+            return;
+        }
+
+        try {
+            writeValueProperty(gen, keyPrefix + marker.getFieldName(), fieldValue.get(marker));
+        } catch (IllegalAccessException e) {
+            errorReporter.logError("error in logging with object serialization", e);
         }
     }
 

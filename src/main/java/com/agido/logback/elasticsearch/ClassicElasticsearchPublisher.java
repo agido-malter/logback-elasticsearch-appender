@@ -9,7 +9,7 @@ import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.AbstractPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ClassicPropertyAndEncoder;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
-import com.fasterxml.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonGenerator;
 import org.slf4j.event.KeyValuePair;
 
 import java.io.IOException;
@@ -30,22 +30,22 @@ public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublishe
 
     @Override
     protected void serializeCommonFields(JsonGenerator gen, ILoggingEvent event) throws IOException {
-        gen.writeObjectField("@timestamp", getTimestamp(event.getTimeStamp()));
+        writeValueProperty(gen, "@timestamp", getTimestamp(event.getTimeStamp()));
 
         if (settings.isRawJsonMessage()) {
-            gen.writeFieldName("message");
+            gen.writeName("message");
             gen.writeRawValue(event.getFormattedMessage());
         } else {
             String formattedMessage = event.getFormattedMessage();
             if (settings.getMaxMessageSize() > 0 && formattedMessage != null && formattedMessage.length() > settings.getMaxMessageSize()) {
                 formattedMessage = formattedMessage.substring(0, settings.getMaxMessageSize()) + "..";
             }
-            gen.writeObjectField("message", formattedMessage);
+            gen.writeStringProperty("message", formattedMessage);
         }
 
         if (settings.isIncludeMdc()) {
             for (Map.Entry<String, String> entry : event.getMDCPropertyMap().entrySet()) {
-                gen.writeObjectField(entry.getKey(), entry.getValue());
+                gen.writeStringProperty(entry.getKey(), entry.getValue());
             }
         }
 
@@ -53,7 +53,7 @@ public class ClassicElasticsearchPublisher extends AbstractElasticsearchPublishe
           final List<KeyValuePair> kvps = event.getKeyValuePairs() != null ? event.getKeyValuePairs() : Collections.emptyList();
           for (KeyValuePair kvp : kvps) {
             if (kvp != null) {
-              gen.writeObjectField(kvp.key, kvp.value);
+              writeValueProperty(gen, kvp.key, kvp.value);
             }
           }
         }

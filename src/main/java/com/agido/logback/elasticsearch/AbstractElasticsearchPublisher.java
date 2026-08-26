@@ -10,11 +10,13 @@ import com.agido.logback.elasticsearch.util.ErrorReporter;
 import com.agido.logback.elasticsearch.writer.ElasticsearchWriter;
 import com.agido.logback.elasticsearch.writer.LoggerWriter;
 import com.agido.logback.elasticsearch.writer.StdErrWriter;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -43,7 +45,6 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     private List<AbstractPropertyAndEncoder<T>> propertyList;
 
     private AbstractPropertyAndEncoder<T> indexPattern;
-    private JsonFactory jf;
     private JsonGenerator jsonGenerator;
 
     private ErrorReporter errorReporter;
@@ -64,10 +65,7 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
 
         this.outputAggregator = configureOutputAggregator(settings, errorReporter, headers);
 
-        this.jf = buildJsonFactory(settings);
-
-        this.jf.setRootValueSeparator(null);
-        this.jsonGenerator = jf.createGenerator(outputAggregator);
+        this.jsonGenerator = buildJsonGenerator(settings, outputAggregator);
 
         this.indexPattern = buildPropertyAndEncoder(context, new Property("<index>", settings.getIndex(), false));
         this.propertyList = generatePropertyList(context, properties);
@@ -100,13 +98,16 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
         }
     }
 
-    private JsonFactory buildJsonFactory(Settings settings) {
+    private JsonGenerator buildJsonGenerator(Settings settings, ElasticsearchOutputAggregator output) throws IOException {
+        JsonFactory factory = JsonFactory.builder()
+                .rootValueSeparator((String) null)
+                .build();
+
+        tools.jackson.databind.json.JsonMapper.Builder mapperBuilder = JsonMapper.builder(factory);
         if (settings.isObjectSerialization()) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.findAndRegisterModules();
-            return mapper.getFactory();
+            mapperBuilder.findAndAddModules();
         }
-        return new JsonFactory();
+        return mapperBuilder.build().createGenerator(output);
     }
 
     protected ElasticsearchOutputAggregator configureOutputAggregator(Settings settings, ErrorReporter errorReporter, HttpRequestHeaders httpRequestHeaders) {
@@ -244,11 +245,11 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
 
     private void serializeIndexString(JsonGenerator gen, T event) throws IOException {
         gen.writeStartObject();
-        gen.writeObjectFieldStart(settings.getOperation().name());
-        gen.writeObjectField("_index", indexPattern.encode(event));
+        gen.writeObjectPropertyStart(settings.getOperation().name());
+        gen.writeStringProperty("_index", indexPattern.encode(event));
         String type = settings.getType();
         if (type != null) {
-            gen.writeObjectField("_type", type);
+            gen.writeStringProperty("_type", type);
         }
         gen.writeEndObject();
         gen.writeEndObject();
@@ -269,6 +270,32 @@ public abstract class AbstractElasticsearchPublisher<T> implements Runnable {
     }
 
     protected abstract void serializeCommonFields(JsonGenerator gen, T event) throws IOException;
+
+    protected void writeValueProperty(JsonGenerator gen, String name, Object value) throws IOException {
+        if (value == null) {
+            gen.writeNullProperty(name);
+        } else if (value instanceof String || value instanceof Character) {
+            gen.writeStringProperty(name, value.toString());
+        } else if (value instanceof Boolean) {
+            gen.writeBooleanProperty(name, (Boolean) value);
+        } else if (value instanceof Byte || value instanceof Short || value instanceof Integer) {
+            gen.writeNumberProperty(name, ((Number) value).intValue());
+        } else if (value instanceof Long) {
+            gen.writeNumberProperty(name, (Long) value);
+        } else if (value instanceof BigInteger) {
+            gen.writeNumberProperty(name, (BigInteger) value);
+        } else if (value instanceof Float) {
+            gen.writeNumberProperty(name, (Float) value);
+        } else if (value instanceof Double) {
+            gen.writeNumberProperty(name, (Double) value);
+        } else if (value instanceof BigDecimal) {
+            gen.writeNumberProperty(name, (BigDecimal) value);
+        } else if (settings.isObjectSerialization()) {
+            gen.writePOJOProperty(name, value);
+        } else {
+            gen.writeStringProperty(name, value.toString());
+        }
+    }
 
     protected  Object getTimestamp(long timestamp) {
         if(settings.getTimestampFormat()!=null && "long".equals(settings.getTimestampFormat())){

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing release tag to publish (for example v3.1.2)
+        description: Existing release tag to publish (for example v4.0.0)
         required: true
         type: string
 
@@ -69,7 +69,7 @@ jobs:
 
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Ungültiger Release-Tag: $RELEASE_TAG"
-            echo "Erwartetes Format: v3.1.1"
+            echo "Erwartetes Format: v4.0.0"
             exit 1
           fi
 
