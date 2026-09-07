@@ -2,11 +2,22 @@
 
 ## Supported Versions
 
-Security fixes are provided for the latest released version of
+| Version | Supported |
+| --- | --- |
+| 4.x | Yes |
+| 3.1.x and older | No |
+
+Security fixes are provided for the latest released 4.x version of
 `com.agido:logback-elasticsearch-appender`.
 
-Older versions are not actively supported. Before reporting a vulnerability,
-please verify whether it is reproducible with the latest release.
+Version 3.1.x is the final release line supporting Java 11. Known security
+findings remain in its legacy dependency stack and resolving them requires
+breaking dependency upgrades. No further dependency updates or security
+backports are planned for 3.1.x or older versions. Users should upgrade to 4.x
+and Java 17 or newer.
+
+Before reporting a vulnerability, please verify whether it is reproducible with
+the latest supported release.
 
 ## Reporting a Vulnerability
 

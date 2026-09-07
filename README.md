@@ -123,6 +123,16 @@ explicitly verified by the complete CI test suite; intermediate and newer JDK
 releases are expected to work but are not separately verified. Applications
 that must remain on Java 11 should stay on the 3.1.x line.
 
+> [!WARNING]
+> Version 3.1.x is the final release line supporting Java 11 and is no longer
+> actively maintained. Known security findings remain in its legacy dependency
+> stack and cannot be resolved without breaking dependency upgrades. No further
+> dependency or security updates are planned for the 3.1.x line.
+>
+> Users should upgrade to version 4.x and Java 17 or newer. If an upgrade is not
+> immediately possible, review the dependency findings in the context of the
+> application and apply appropriate mitigations.
+
 Newer Logback, SLF4J, Elasticsearch, or OpenSearch combinations may work, but
 they are not guaranteed by the current build and test configuration. If you
 depend on a specific combination, run the test suite and an integration test
