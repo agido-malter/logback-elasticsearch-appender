@@ -125,13 +125,13 @@ that must remain on Java 11 should stay on the 3.1.x line.
 
 > [!WARNING]
 > Version 3.1.x is the final release line supporting Java 11 and is no longer
-> actively maintained. Known security findings remain in its legacy dependency
-> stack and cannot be resolved without breaking dependency upgrades. No further
-> dependency or security updates are planned for the 3.1.x line.
+> actively maintained. Upstream fixes are not available for the affected
+> dependency versions. Replacing them with newer major versions within the 3.1.x
+> line would risk substantial binary, runtime, and behavioral incompatibilities.
 >
-> Users should upgrade to version 4.x and Java 17 or newer. If an upgrade is not
-> immediately possible, review the dependency findings in the context of the
-> application and apply appropriate mitigations.
+> The remaining dependency findings therefore cannot be safely remediated
+> in-place. Users should migrate to version 4.x and Java 17 or newer. No further
+> dependency updates or security backports are planned for 3.1.x.
 
 Newer Logback, SLF4J, Elasticsearch, or OpenSearch combinations may work, but
 they are not guaranteed by the current build and test configuration. If you
