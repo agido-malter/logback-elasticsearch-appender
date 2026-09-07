@@ -1,6 +1,6 @@
 package com.agido.logback.elasticsearch;
 
-import ch.qos.logback.access.spi.IAccessEvent;
+import ch.qos.logback.access.common.spi.IAccessEvent;
 import com.agido.logback.elasticsearch.config.Settings;
 
 import java.io.IOException;

@@ -6,8 +6,9 @@ import com.agido.logback.elasticsearch.config.HttpRequestHeader;
 import com.agido.logback.elasticsearch.config.HttpRequestHeaders;
 import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -179,7 +180,7 @@ public class ElasticsearchWriter implements SafeWriter {
         final JsonNode root;
         try {
             root = RESPONSE_MAPPER.readTree(trimmedBody);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new IOException("Could not parse successful Bulk API response", e);
         }
 
@@ -234,7 +235,7 @@ public class ElasticsearchWriter implements SafeWriter {
         if (item == null || !item.isObject() || item.size() != 1) {
             throw new IOException("Bulk API item response has an unexpected structure");
         }
-        return item.elements().next();
+        return item.iterator().next();
     }
 
     private HttpResponse<byte[]> sendRequest(URI sendUri, String userInfo, String data) throws IOException {

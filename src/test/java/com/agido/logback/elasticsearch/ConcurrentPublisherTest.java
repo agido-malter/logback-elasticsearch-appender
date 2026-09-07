@@ -10,7 +10,7 @@ import com.agido.logback.elasticsearch.config.Operation;
 import com.agido.logback.elasticsearch.config.Settings;
 import com.agido.logback.elasticsearch.util.ErrorReporter;
 import com.agido.logback.elasticsearch.writer.SafeWriter;
-import com.fasterxml.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
