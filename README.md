@@ -8,6 +8,8 @@
 
 Send Logback events asynchronously to the Elasticsearch and OpenSearch Bulk APIs.
 
+**Documentation:** [Guides and reference](https://agido-malter.github.io/logback-elasticsearch-appender/) · [Build or preview the website](docs/README.md)
+
 This project is the **actively maintained successor to
 [`internetitem/logback-elasticsearch-appender`](https://github.com/internetitem/logback-elasticsearch-appender)**,
 whose last commit was in 2017. It continues the original project with bug fixes,

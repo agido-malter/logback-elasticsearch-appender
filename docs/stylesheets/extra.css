@@ -1,0 +1,24 @@
+/* A quiet documentation layout; colors work with both theme modes. */
+:root { --bs-primary: #087e8b; --bs-link-color: #087e8b; --bs-link-hover-color: #065e68; }
+.navbar { background: #102c3c !important; background-image: none !important; border-bottom: 3px solid #20b7ad; }
+.navbar-brand { font-weight: 650; font-size: 1rem; white-space: normal; max-width: 30rem; }
+body { font-size: 1rem; line-height: 1.7; }
+h1, h2, h3 { font-weight: 650; line-height: 1.25; letter-spacing: -.02em; }
+h1 { margin-bottom: 1.25rem; font-size: clamp(1.8rem, 4vw, 2.7rem); }
+h2 { margin-top: 2.3rem; padding-top: .4rem; }
+pre { border-radius: .45rem; padding: 1rem; }
+pre code { font-size: .85rem; }
+blockquote { border-left: 3px solid #20b7ad; padding: .5rem 1rem; background: rgba(32,183,173,.07); }
+blockquote p:last-child { margin-bottom: 0; }
+table { display: block; overflow-x: auto; font-size: .9rem; }
+.bs-sidebar { font-size: .9rem; }
+footer { font-size: .85rem; }
+@media (max-width: 767px) {
+  .navbar-brand { max-width: calc(100vw - 7rem); font-size: .9rem; }
+  .container { padding-left: 1rem; padding-right: 1rem; }
+}
+
+/* Keep long Java class names inside narrow content columns. */
+.col-md-9 { min-width: 0; overflow-wrap: anywhere; }
+.navbar-brand { flex-shrink: 1; }
+body::before { background-image: none; }

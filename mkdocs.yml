@@ -1,0 +1,43 @@
+site_name: Logback Elasticsearch / OpenSearch Appender
+site_description: Send Java Logback events asynchronously to Elasticsearch and OpenSearch. Quick start, configuration, authentication, and migration from internetitem.
+site_url: https://agido-malter.github.io/logback-elasticsearch-appender/
+repo_url: https://github.com/agido-malter/logback-elasticsearch-appender
+repo_name: GitHub
+edit_uri: ''
+docs_dir: target/pages-src
+site_dir: target/site
+use_directory_urls: true
+strict: true
+theme:
+  name: mkdocs
+  color_mode: light
+  user_color_mode_toggle: true
+  navigation_depth: 3
+  highlightjs: true
+  hljs_languages:
+    - xml
+    - groovy
+    - java
+    - yaml
+nav:
+  - Overview: index.md
+  - Getting started: getting-started.md
+  - Compatibility: compatibility.md
+  - Migration: migration.md
+  - Configuration: configuration.md
+  - Authentication: authentication.md
+  - Examples: examples.md
+  - Delivery & limits: delivery.md
+  - Project: project.md
+  - Changelog: changelog.md
+plugins:
+  - search
+markdown_extensions:
+  - tables
+  - fenced_code
+  - admonition
+  - toc:
+      permalink: true
+extra_css:
+  - stylesheets/extra.css
+copyright: Licensed under EPL-1.0 or LGPL-2.1.
