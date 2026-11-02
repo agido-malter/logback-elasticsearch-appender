@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block site_name %}
+<a class="navbar-brand project-brand" href="{{ nav.homepage.url|url }}" aria-label="Logback Elasticsearch / OpenSearch Appender home"><span class="brand-mark" aria-hidden="true">&gt;_</span><span>Logback<span class="brand-subtitle">Elasticsearch / OpenSearch</span></span></a>
+{% endblock %}
+{% block next_prev %}{% endblock %}
+{% block content %}
+{% if page and page.is_homepage %}
+<main class="col-12 landing" id="main-content">{{ page.content }}</main>
+{% else %}
+{{ super() }}
+{% endif %}
+{% endblock %}

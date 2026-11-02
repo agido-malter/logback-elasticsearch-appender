@@ -2,9 +2,11 @@
 
 The website is generated from the top-level `README.md` and `Changelog.md`.
 Edit those files to update the technical documentation; do not edit generated
-files in `target/pages-src/` or `target/site/`. Landing-page copy and the mapping
-of README sections to pages live in `docs/build.py`; styling lives in
-`docs/stylesheets/extra.css`. Navigation and website metadata are in `mkdocs.yml`.
+files in `target/pages-src/` or `target/site/`. Landing-page copy and layout live in `docs/home.html`; the mapping of README
+sections to pages lives in `docs/build.py`. Installation snippets are extracted
+from the README, and the version and Java baseline come from `pom.xml`. The
+site header and full-width homepage use `docs/overrides/main.html`; styling
+lives in `docs/stylesheets/extra.css`. Copy buttons use `docs/javascripts/copy.js`. Navigation and website metadata are in `mkdocs.yml`.
 The generator fails if README sections are added, removed or renamed without
 updating the mapping.
 

@@ -10,6 +10,7 @@ use_directory_urls: true
 strict: true
 theme:
   name: mkdocs
+  custom_dir: docs/overrides
   color_mode: light
   user_color_mode_toggle: true
   navigation_depth: 3
@@ -21,23 +22,29 @@ theme:
     - yaml
 nav:
   - Overview: index.md
-  - Getting started: getting-started.md
-  - Compatibility: compatibility.md
-  - Migration: migration.md
-  - Configuration: configuration.md
-  - Authentication: authentication.md
-  - Examples: examples.md
-  - Delivery & limits: delivery.md
-  - Project: project.md
-  - Changelog: changelog.md
+  - Quick start: getting-started.md
+  - Guides:
+      - Compatibility: compatibility.md
+      - Migration: migration.md
+      - Examples: examples.md
+  - Reference:
+      - Configuration: configuration.md
+      - Authentication: authentication.md
+      - Delivery & limits: delivery.md
+  - Project:
+      - Contributing & security: project.md
+      - Changelog: changelog.md
 plugins:
   - search
 markdown_extensions:
   - tables
   - fenced_code
   - admonition
+  - attr_list
   - toc:
       permalink: true
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - javascripts/copy.js
 copyright: Licensed under EPL-1.0 or LGPL-2.1.

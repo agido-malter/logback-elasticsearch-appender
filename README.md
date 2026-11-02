@@ -10,9 +10,9 @@ Send Logback events asynchronously to the Elasticsearch and OpenSearch Bulk APIs
 
 **Documentation:** [Guides and reference](https://agido-malter.github.io/logback-elasticsearch-appender/) · [Build or preview the website](docs/README.md)
 
-This project is the **actively maintained successor to
+This project is an **actively maintained fork of
 [`internetitem/logback-elasticsearch-appender`](https://github.com/internetitem/logback-elasticsearch-appender)**,
-whose last commit was in 2017. It continues the original project with bug fixes,
+developed independently with bug fixes,
 dependency and security updates, current Java and Logback support, and additional
 configuration options.
 
@@ -161,7 +161,7 @@ update:
 
 ## Migrating from the original `internetitem` project
 
-This project is a maintained continuation, but it is **not documented as a
+This project is a maintained fork, but it is **not documented as a
 drop-in replacement**. Migrate explicitly:
 
 1. Replace the dependency coordinates with
@@ -453,7 +453,8 @@ shipper or queue between the application and Elasticsearch or OpenSearch.
 
 ## Project status
 
-This fork exists to continue development of the unmaintained original project.
+This fork independently develops the original codebase with bug fixes,
+dependency updates, and additional configuration options.
 The current `4.0.x` line moves the minimum runtime to Java 17 and updates the
 project to Logback 1.6, Logback Access 2, Jackson 3, Logstash Logback Encoder 9,
 and the current AWS SDK v2 line. The 3.1.x line remains the final Java 11 line

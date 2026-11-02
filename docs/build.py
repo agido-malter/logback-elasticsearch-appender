@@ -2,6 +2,8 @@
 """Generate the documentation pages from README.md; run before mkdocs build/serve."""
 
 from pathlib import Path
+from html import escape
+import xml.etree.ElementTree as ET
 import re
 import shutil
 
@@ -23,7 +25,8 @@ PAGES = {
 
 
 def slug(title):
-    return re.sub(r"[^\w\- ]", "", title.lower()).replace(" ", "-")
+    value = re.sub(r"[^\w\- ]", "", title.lower()).replace(" ", "-")
+    return f"section-{value}" if value[:1].isdigit() else value
 
 
 def headings(source):
@@ -96,40 +99,47 @@ for page, (title, names) in PAGES.items():
         content = "".join(line[1:] if is_heading and line.startswith("###") else line for line, is_heading in headings(content))
     (DEST / f"{page}.md").write_text(convert(content))
 
-intro = readme.split("## Quick start", 1)[0]
-# Website navigation replaces the README's documentation link and status badges.
-intro = "\n".join(line for line in intro.splitlines() if not line.startswith("[![") and not line.startswith("**Documentation:**"))
-intro = intro.replace("# Logback Elasticsearch / OpenSearch Appender", "# Send Logback events to Elasticsearch and OpenSearch", 1)
-intro += """
-
-[Get started](getting-started.md) · [View on GitHub](https://github.com/agido-malter/logback-elasticsearch-appender) · [Maven Central](https://central.sonatype.com/artifact/com.agido/logback-elasticsearch-appender)
-
-## Java logging, directly to your search cluster
-
-Send events asynchronously through the Bulk API, enrich them with Logback
-patterns, MDC and SLF4J key-value pairs, and configure authentication for your
-Elasticsearch or OpenSearch endpoint.
-
-- **Start a new integration:** [Maven/Gradle dependency and a complete logback.xml](getting-started.md).
-- **Check your stack:** [Java, Logback, Elasticsearch and OpenSearch compatibility](compatibility.md).
-- **Move from internetitem or version 3.x:** [Migration steps and shutdown changes](migration.md).
-- **Configure delivery:** [Options and defaults](configuration.md), [authentication](authentication.md), and [examples](examples.md).
-- **Understand reliability:** [Retries, queue limits and delivery behavior](delivery.md).
-
-## Before you integrate
-
-The appender sends directly from your application and buffers events in memory.
-Logs can be lost during outages or shutdown. For durable, guaranteed delivery,
-use an external log shipper or queue. See [delivery behavior](delivery.md) for
-the exact limits.
-
-## Follow the project
-
-Read the [changelog](changelog.md), [contribute](project.md#contributing), or
-[report a reproducible issue](https://github.com/agido-malter/logback-elasticsearch-appender/issues).
-"""
-(DEST / "index.md").write_text(convert(intro))
+# Keep installation snippets and version numbers tied to the project sources.
+pom = ET.parse(ROOT / "pom.xml").getroot()
+ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+version = pom.findtext("m:version", namespaces=ns)
+java_version = pom.findtext("m:properties/m:maven.compiler.release", namespaces=ns)
+if not version or not java_version:
+    raise ValueError("Project version or minimum Java version missing in pom.xml")
+quick_start = sections["Quick start"]
+xml_examples = re.findall(r"```xml\n(.*?)```", quick_start, re.S)
+if len(xml_examples) < 2:
+    raise ValueError("README quick start must contain dependency and configuration examples")
+dependency = xml_examples[0].strip()
+configuration = next(example for example in xml_examples if "<configuration>" in example)
+# The reference keeps the full example; the landing page shows the minimal setup.
+configuration = re.sub(r"        <properties>.*?</properties>\n", "", configuration, flags=re.S).strip()
+for snippet in (dependency, configuration):
+    ET.fromstring(snippet)
+if f"<version>{version}</version>" not in dependency:
+    raise ValueError("README dependency version does not match pom.xml")
+landing = (ROOT / "docs" / "home.html").read_text()
+for key, value in {"VERSION": version, "JAVA": java_version, "DEPENDENCY": dependency, "CONFIGURATION": configuration}.items():
+    landing = landing.replace(f"@@{key}@@", escape(value))
+if re.search(r"@@[A-Z]+@@", landing):
+    raise ValueError("Unresolved landing page placeholder")
+(DEST / "index.md").write_text("---\ntitle: Logback Elasticsearch / OpenSearch Appender\n---\n\n" + landing)
 (DEST / "changelog.md").write_text((ROOT / "Changelog.md").read_text())
-shutil.copytree(ROOT / "docs" / "stylesheets", DEST / "stylesheets", dirs_exist_ok=True)
+# Bootstrap ScrollSpy uses CSS selectors, which cannot start with a number.
+# Keep old deep links as aliases while making the TOC's IDs safe selectors.
+for generated in DEST.glob("*.md"):
+    lines = []
+    for line, is_heading in headings(generated.read_text()):
+        title = line.lstrip("#").strip()
+        if is_heading and title[:1].isdigit():
+            safe_id = slug(title)
+            old_id = safe_id.removeprefix("section-")
+            lines.append(f'<span id="{old_id}"></span>\n\n')
+            line = line.rstrip() + f" {{#{safe_id}}}\n"
+        lines.append(line)
+    generated.write_text("".join(lines))
+
+for asset_dir in ("stylesheets", "javascripts"):
+    shutil.copytree(ROOT / "docs" / asset_dir, DEST / asset_dir, dirs_exist_ok=True)
 (DEST / "robots.txt").write_text("User-agent: *\nAllow: /\nSitemap: https://agido-malter.github.io/logback-elasticsearch-appender/sitemap.xml\n")
 print(f"Generated {len(PAGES) + 2} pages from README.md and Changelog.md in {DEST}")

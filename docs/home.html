@@ -1,0 +1,63 @@
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-copy">
+    <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> An open-source appender for Java</p>
+    <h1 id="hero-title">Your logs.<br><span>Ready to search.</span></h1>
+    <p class="hero-description">Send Logback events straight to Elasticsearch or OpenSearch. Asynchronous delivery, structured fields, and a familiar XML configuration.</p>
+    <div class="hero-actions"><a class="action-primary" href="getting-started/">Get started <span aria-hidden="true">↗</span></a><a class="action-secondary" href="https://github.com/agido-malter/logback-elasticsearch-appender">Explore on GitHub <span aria-hidden="true">→</span></a></div>
+    <p class="hero-meta">Version @@VERSION@@ <span aria-hidden="true">/</span> Java @@JAVA@@+ <span aria-hidden="true">/</span> EPL-1.0 or LGPL-2.1</p>
+  </div>
+  <div class="event-preview" aria-label="Illustrative log event sent to the Bulk API">
+    <div class="terminal-top"><span class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></span><span>application.log</span><span class="terminal-label">LOG → JSON</span></div>
+    <div class="log-line"><span class="log-time">10:42:08</span> <span class="log-level">INFO</span> Order accepted</div>
+    <div class="event-connector"><span aria-hidden="true">↓</span> ElasticsearchAppender</div>
+    <div class="json-label">BULK API EVENT <span>illustrative payload</span></div>
+    <pre class="event-json"><code class="nohighlight">{
+  <span class="json-key">"@timestamp"</span>: <span class="json-string">"2026-11-02T10:42:08.000+0000"</span>,
+  <span class="json-key">"message"</span>: <span class="json-string">"Order accepted"</span>,
+  <span class="json-key">"level"</span>: <span class="json-string">"INFO"</span>
+}</code></pre>
+    <div class="terminal-foot"><span class="status-dot" aria-hidden="true"></span> Elasticsearch or OpenSearch <span>POST /_bulk</span></div>
+  </div>
+</section>
+
+<div class="proof-strip" aria-label="Project facts">
+  <a href="migration/"><span class="proof-label">Actively maintained</span><span>Independent fork of internetitem <span aria-hidden="true">↗</span></span></a>
+  <a href="compatibility/"><span class="proof-label">Integration tested</span><span>Elasticsearch &amp; OpenSearch <span aria-hidden="true">↗</span></span></a>
+  <a href="https://central.sonatype.com/artifact/com.agido/logback-elasticsearch-appender"><span class="proof-label">Available on Maven Central</span><span>com.agido · @@VERSION@@ <span aria-hidden="true">↗</span></span></a>
+</div>
+
+<section class="landing-section" aria-labelledby="flow-title">
+  <div class="section-heading"><p class="eyebrow">01 / The path from log to index</p><h2 id="flow-title">Keep your logging workflow.</h2><p>Log through Logback. The appender handles asynchronous delivery to your search cluster.</p></div>
+  <ol class="pipeline" aria-label="Log delivery flow">
+    <li><span class="pipeline-number">01</span><strong>Your Java app</strong><span>Log as you normally do</span></li>
+    <li><span class="pipeline-number">02</span><strong>Logback appender</strong><span>Enrich &amp; buffer in memory</span></li>
+    <li><span class="pipeline-number">03</span><strong>Bulk API</strong><span>Send on a worker thread</span></li>
+    <li><span class="pipeline-number">04</span><strong>Your search cluster</strong><span>Elasticsearch or OpenSearch</span></li>
+  </ol>
+</section>
+
+<section class="landing-section quickstart" aria-labelledby="setup-title">
+  <div class="section-heading"><p class="eyebrow">02 / Start with two small changes</p><h2 id="setup-title">A dependency. An appender. Your logs.</h2><p>Add the library and point Logback at your Bulk API endpoint. The example below targets a local cluster.</p></div>
+  <div class="setup-grid">
+    <div class="setup-step"><div class="snippet-heading"><h3><span>1</span> Add the dependency</h3><button class="copy-button" data-copy="dependency-code" hidden>Copy</button></div><pre><code id="dependency-code" class="language-xml">@@DEPENDENCY@@</code></pre><p>Using Gradle? See the <a href="getting-started/">complete quick start</a>. Your application supplies Logback and SLF4J.</p></div>
+    <div class="setup-step"><div class="snippet-heading"><h3><span>2</span> Configure logback.xml</h3><button class="copy-button" data-copy="configuration-code" hidden>Copy</button></div><pre><code id="configuration-code" class="language-xml">@@CONFIGURATION@@</code></pre><p><code>@timestamp</code> and <code>message</code> are sent automatically. Add fields through <a href="configuration/">Logback patterns and configuration</a>.</p></div>
+  </div>
+  <p class="setup-note">Connecting to a secured cluster? Configure <a href="authentication/">basic authentication or AWS SigV4</a>, and check the <a href="compatibility/">tested versions</a> for your stack.</p>
+  <span id="copy-status" role="status" class="visually-hidden"></span>
+</section>
+
+<section class="landing-section" aria-labelledby="features-title">
+  <div class="section-heading"><p class="eyebrow">03 / Built for real application logs</p><h2 id="features-title">More context. Less configuration work.</h2></div>
+  <div class="feature-grid">
+    <a class="feature" href="delivery/"><span class="feature-symbol" aria-hidden="true">↗</span><h3>Asynchronous delivery</h3><p>A worker thread sends batches, keeping network requests off your application's logging thread.</p><span class="text-link">Explore delivery behavior →</span></a>
+    <a class="feature" href="examples/"><span class="feature-symbol" aria-hidden="true">{ }</span><h3>Structured context</h3><p>Include MDC values, SLF4J fluent key-value pairs, and fields generated with Logback patterns.</p><span class="text-link">See field examples →</span></a>
+    <a class="feature" href="authentication/"><span class="feature-symbol" aria-hidden="true">⌘</span><h3>Authentication options</h3><p>Use basic authentication or AWS Signature Version 4, including the service name for OpenSearch Serverless.</p><span class="text-link">Configure authentication →</span></a>
+    <a class="feature" href="configuration/"><span class="feature-symbol" aria-hidden="true">≋</span><h3>Control the tradeoffs</h3><p>Set batch size, buffer limits, timeouts and retries to fit your application's delivery requirements.</p><span class="text-link">Browse the reference →</span></a>
+  </div>
+</section>
+
+<section class="migration-callout" aria-labelledby="migration-title"><div><p class="eyebrow">An independently maintained fork</p><h2 id="migration-title">Coming from internetitem?</h2><p>This independently maintained fork brings dependency updates, bug fixes and current platform support. Review the explicit migration steps, including package names and shutdown behavior.</p></div><a class="action-primary" href="migration/">Read the migration guide <span aria-hidden="true">→</span></a></section>
+
+<section class="landing-section project-section" aria-labelledby="project-title"><div><p class="eyebrow">04 / Know what you are running</p><h2 id="project-title">Open source. Documented limits.</h2><p>The buffer lives in memory. Outages, exhausted retries or shutdown can leave logs undelivered. For durable, guaranteed delivery, use an external log shipper or queue.</p><a class="text-link" href="delivery/">Understand delivery guarantees and limits →</a></div><div class="project-links"><a href="compatibility/">Tested compatibility <span aria-hidden="true">↗</span></a><a href="changelog/">Release history <span aria-hidden="true">↗</span></a><a href="project/#contributing">Contribute to the project <span aria-hidden="true">↗</span></a><a href="https://github.com/agido-malter/logback-elasticsearch-appender/issues">Report an issue <span aria-hidden="true">↗</span></a></div></section>
+
+<div class="build-status"><span>Build &amp; integration checks</span><a href="https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml"><img src="https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/test.yml/badge.svg" alt="Maven test workflow status" loading="lazy"></a><a href="https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/elasticsearch.yml"><img src="https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/elasticsearch.yml/badge.svg" alt="Elasticsearch integration workflow status" loading="lazy"></a><a href="https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/opensearch.yml"><img src="https://github.com/agido-malter/logback-elasticsearch-appender/actions/workflows/opensearch.yml/badge.svg" alt="OpenSearch integration workflow status" loading="lazy"></a></div>
